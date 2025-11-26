@@ -40,9 +40,8 @@ const STORAGE_KEYS = {
   titles: 'calendar_titles',
   contents: 'calendar_contents',
   periods: 'calendar_periods',
-  events: 'calendarEvents', // Home 페이지에서 읽는 키
+  events: 'calendarEvents',
 
-  // ✅ 뷰 상태 유지용 키
   viewYear: 'calendar_view_year',
   viewMonth: 'calendar_view_month',
   selectedDate: 'calendar_selected_date',
@@ -124,7 +123,6 @@ export default function CalendarPage() {
   const [holidayMap, setHolidayMap] = useState<Record<string, Holiday>>({})
   const [holidayLoading, setHolidayLoading] = useState(false)
 
-  // 🔑 localStorage 로드 완료 여부
   const [loaded, setLoaded] = useState(false)
 
   // 🟣 새 일정 모달 상태
@@ -137,17 +135,16 @@ export default function CalendarPage() {
   const [modalUseTime, setModalUseTime] = useState<boolean>(false)
   const [modalUsePeriod, setModalUsePeriod] = useState<boolean>(false)
   const [modalTime, setModalTime] = useState<string>('')
+  const [modalTitle, setModalTitle] = useState<string>('') // 제목
   const [modalDescription, setModalDescription] = useState<string>('')
 
-  // 오늘 날짜 키
   const todayKey = `${today.getFullYear()}-${String(
     today.getMonth() + 1
   ).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
 
-  // ✅ 페이지 처음 들어올 때 localStorage에서 일정 + 뷰 상태 로드
+  // ✅ 처음 로드
   useEffect(() => {
     try {
-      // 🧭 뷰 상태 복원 (연/월/선택날짜/컨텍스트 날짜)
       const savedYear = localStorage.getItem(STORAGE_KEYS.viewYear)
       const savedMonth = localStorage.getItem(STORAGE_KEYS.viewMonth)
       const savedSelectedDate = localStorage.getItem(STORAGE_KEYS.selectedDate)
@@ -166,7 +163,6 @@ export default function CalendarPage() {
         setContextDate(savedContextDate)
       }
 
-      // 🗂 일정 관련 데이터들 복원
       const savedMemos = localStorage.getItem(STORAGE_KEYS.memos)
       const savedColors = localStorage.getItem(STORAGE_KEYS.colors)
       const savedTitles = localStorage.getItem(STORAGE_KEYS.titles)
@@ -181,12 +177,11 @@ export default function CalendarPage() {
     } catch (e) {
       console.warn('캘린더 데이터 로드 중 오류:', e)
     } finally {
-      // ✅ 로드 완료 플래그
       setLoaded(true)
     }
   }, [])
 
-  // ✅ 메모/색상/기간이 바뀔 때마다 localStorage에 저장 + Home용 events 생성
+  // ✅ 데이터 변경 → 저장 + Home events
   useEffect(() => {
     if (!loaded) return
 
@@ -211,7 +206,7 @@ export default function CalendarPage() {
     }
   }, [memos, customColors, dateNoteTitles, dateNoteContents, periods, loaded])
 
-  // ✅ 연/월/선택 날짜/컨텍스트 날짜 바뀔 때마다 뷰 상태 저장
+  // ✅ 뷰 상태 저장
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEYS.viewYear, String(year))
@@ -233,7 +228,7 @@ export default function CalendarPage() {
     }
   }, [year, month, selectedDate, contextDate])
 
-  // 🔄 연도 바뀔 때 한국 공휴일 API에서 가져오기
+  // 🔄 연도 바뀔 때 공휴일
   useEffect(() => {
     let cancelled = false
 
@@ -267,7 +262,7 @@ export default function CalendarPage() {
     }
   }, [year])
 
-  // 📅 달력 셀 만들기
+  // 📅 셀 생성
   const firstDay = new Date(year, month, 1).getDay()
   const lastDate = new Date(year, month + 1, 0).getDate()
 
@@ -282,7 +277,7 @@ export default function CalendarPage() {
     cells.push({ day: d, key })
   }
 
-  // 🔧 연/월 이동
+  // 🔧 월 이동
   const handlePrevMonth = () => {
     let newYear = year
     let newMonth = month - 1
@@ -318,6 +313,7 @@ export default function CalendarPage() {
     setModalUseTime(false)
     setModalUsePeriod(false)
     setModalTime('')
+    setModalTitle(dateNoteTitles[dateKey] ?? '')
     setModalDescription('')
     setIsModalOpen(true)
   }
@@ -335,14 +331,15 @@ export default function CalendarPage() {
     setIsModalOpen(false)
   }
 
+  // ✅ single / range 완전 분리
   const handleModalSubmit = (e: FormEvent) => {
     e.preventDefault()
     if (!modalStartDate) {
       alert('시작일을 선택하세요.')
       return
     }
-    if (!modalDescription.trim()) {
-      alert('설명을 입력하세요.')
+    if (!modalTitle.trim()) {
+      alert('제목을 입력하세요.')
       return
     }
 
@@ -350,82 +347,84 @@ export default function CalendarPage() {
     const end =
       modalRangeType === 'range' && modalEndDate ? modalEndDate : modalStartDate
 
-    // 설명을 해당 날짜의 제목으로 저장 → 홈 D-Day에 사용
-    setDateNoteTitles((prev) => ({
-      ...prev,
-      [start]: modalDescription.trim(),
-    }))
+    const descriptionText =
+      modalDescription.trim().length > 0
+        ? modalDescription.trim()
+        : modalTitle.trim()
 
-    // 시간 선택 시 시간 메모도 저장 (선택사항)
-    if (modalUseTime && modalTime) {
-      setMemos((prev) => {
-        const list = prev[start] ?? []
-        const newList: TimeMemo[] = [
-          ...list,
-          { start: modalTime, end: modalTime, text: modalDescription.trim() },
-        ]
-        newList.sort((a, b) =>
-          a.start < b.start ? -1 : a.start > b.start ? 1 : 0
-        )
-        return { ...prev, [start]: newList }
-      })
-    }
-
-    // 기간 설정일 경우 기간 정보도 추가
-    if (modalRangeType === 'range' && start && end && start <= end) {
-      setPeriods((prev) => [
+    if (modalRangeType === 'single') {
+      // 🔹 하루 일정 모드: 제목 + (선택)시간 메모 저장
+      setDateNoteTitles((prev) => ({
         ...prev,
-        {
-          id: Date.now(),
-          label: modalDescription.trim(),
-          start,
-          end,
-          color: '#7c3aed', // 기본 보라색 기간 라인 (원 코드 유지)
-        },
-      ])
+        [start]: modalTitle.trim(),
+      }))
+
+      if (modalUseTime && modalTime) {
+        setMemos((prev) => {
+          const list = prev[start] ?? []
+          const newList: TimeMemo[] = [
+            ...list,
+            { start: modalTime, end: modalTime, text: descriptionText },
+          ]
+          newList.sort((a, b) =>
+            a.start < b.start ? -1 : a.start > b.start ? 1 : 0
+          )
+          return { ...prev, [start]: newList }
+        })
+      }
+
+      // 필요하다면 여기서 dateNoteContents도 사용할 수 있음
+      // setDateNoteContents(...)
+    } else {
+      // 🔹 기간 모드: 하루 일정은 안 만들고 기간만 저장
+      if (start && end && start <= end) {
+        setPeriods((prev) => [
+          ...prev,
+          {
+            id: Date.now(),
+            label: descriptionText,
+            start,
+            end,
+            color: '#7c3aed',
+          },
+        ])
+      }
     }
 
     setIsModalOpen(false)
   }
 
-  // 🔴 일정(이 날짜의 데이터) 전체 삭제
   const handleDeleteScheduleForDate = () => {
-    // 모달에서 바꾼 시작일이 있으면 그걸 기준으로, 없으면 선택된 날짜 기준으로 삭제
     const dateKey = modalStartDate || selectedDate
     if (!dateKey) return
 
     const ok = window.confirm('이 날짜의 모든 일정을 삭제할까요?')
     if (!ok) return
 
-    // 날짜 메모 제목 삭제
     setDateNoteTitles((prev) => {
       const next = { ...prev }
       delete next[dateKey]
       return next
     })
 
-    // 날짜 메모 내용 삭제
     setDateNoteContents((prev) => {
       const next = { ...prev }
       delete next[dateKey]
       return next
     })
 
-    // 시간 메모 삭제
     setMemos((prev) => {
       const next = { ...prev }
       delete next[dateKey]
       return next
     })
 
-    // 날짜 색상 초기화
     setCustomColors((prev) => {
       const next = { ...prev }
       delete next[dateKey]
       return next
     })
 
-    // 이 날짜가 포함된 기간(시작일~종료일 범위에 들어가는 것) 전부 삭제
     setPeriods((prev) =>
       prev.filter((p) => !(p.start <= dateKey && dateKey <= p.end))
     )
@@ -433,7 +432,7 @@ export default function CalendarPage() {
     setIsModalOpen(false)
   }
 
-  const cellsWithRender = cells // 그냥 가독성용 별칭
+  const cellsWithRender = cells
 
   return (
     <div className="page-wrapper">
@@ -453,7 +452,6 @@ export default function CalendarPage() {
             )}
           </div>
 
-          {/* ⬇⬇⬇ 캘린더 화면 부분 ⬇⬇⬇ */}
           <div className="card calendar-card">
             <div className="calendar-header-row">
               <button
@@ -619,11 +617,10 @@ export default function CalendarPage() {
               })}
             </div>
           </div>
-          {/* ⬆⬆⬆ 캘린더 화면 부분 끝 ⬆⬆⬆ */}
         </div>
       </main>
 
-      {/* 🟢 새 일정 추가 모달 (심플 버전) */}
+      {/* 🟢 새 일정 추가 모달 */}
       {isModalOpen && (
         <div className="modal-backdrop" onClick={handleModalClose}>
           <div
@@ -724,6 +721,18 @@ export default function CalendarPage() {
                   value={modalTime}
                   onChange={(e) => setModalTime(e.target.value)}
                   disabled={!modalUseTime}
+                />
+              </div>
+
+              {/* 제목 (설명 바로 위) */}
+              <div className="modal-field">
+                <label className="modal-label">제목</label>
+                <input
+                  type="text"
+                  className="modal-input"
+                  placeholder="예: 수학 수행평가"
+                  value={modalTitle}
+                  onChange={(e) => setModalTitle(e.target.value)}
                 />
               </div>
 
@@ -973,7 +982,6 @@ export default function CalendarPage() {
           border-radius: 999px;
         }
 
-        /* 🟢 모달 스타일 (심플/기본 팝업 느낌) */
         .modal-backdrop {
           position: fixed;
           inset: 0;
