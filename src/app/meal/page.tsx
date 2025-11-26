@@ -21,13 +21,21 @@ const loadGoogleResources = () => {
 }
 
 // ---------------------------
-//  급식 API 불러오기 함수
+//  학교 데이터 (교육청코드 + 학교코드)
+// ---------------------------
+const SCHOOL_DATA: Record<string, { edu: string; code: string }> = {
+  양주고등학교: { edu: 'J10', code: '7580167' },
+  덕계고등학교: { edu: 'J10', code: '7531116' },
+  회천고등학교: { edu: 'J10', code: '7620312' },
+}
+
+// ---------------------------
+//  급식 API 불러오기 함수 (단일 날짜 조회)
 // ---------------------------
 async function fetchMeal(date: string, eduCode: string, schoolCode: string) {
   const KEY = process.env.NEXT_PUBLIC_NEIS_KEY
 
-  const url = `https://open.neis.go.kr/hub/mealServiceDietInfo?KEY=7964045102434e51afb6d22096c5000f&Type=json&ATPT_OFCDC_SC_CODE=J10&SD_SCHUL_CODE=7580167&MLSV_YMD=20241203
-`
+  const url = `https://open.neis.go.kr/hub/mealServiceDietInfo?KEY=109e3660c3624bf5a4803631891234ef&Type=json&ATPT_OFCDC_SC_CODE=J10&SD_SCHUL_CODE=7531116&MLSV_YMD=${date}`
 
   try {
     const res = await fetch(url)
@@ -52,8 +60,7 @@ function getWeekDates() {
 
   // 한국 시간 기준으로 변환
   const kr = new Date(today.getTime() + 9 * 60 * 60 * 1000)
-
-  const day = kr.getDay() // 0: 일, 1: 월 ...
+  const day = kr.getDay() // 0: 일, 1: 월...
   const monday = new Date(kr)
   monday.setDate(kr.getDate() - (day === 0 ? 6 : day - 1))
 
@@ -84,12 +91,22 @@ export default function WeeklyMealPage() {
   >([])
   const [loading, setLoading] = useState(true)
 
-  // 나중에 로그인 시 localStorage에서 가져오면 됨
-  const eduCode = 'J10' // 경기도교육청
-  const schoolCode = '7580167' // 양주고등학교
+  // ---------------------------
+  //  회원정보 기반 학교 불러오기
+  // ---------------------------
+  const [eduCode, setEduCode] = useState('J10') // 기본값
+  const [schoolCode, setSchoolCode] = useState('7580167') // 기본값: 양주고
 
   useEffect(() => {
     loadGoogleResources()
+
+    // ⭐ 로그인한 사용자의 학교 불러오기
+    const userSchool = localStorage.getItem('userSchool')
+
+    if (userSchool && SCHOOL_DATA[userSchool]) {
+      setEduCode(SCHOOL_DATA[userSchool].edu)
+      setSchoolCode(SCHOOL_DATA[userSchool].code)
+    }
 
     const dates = getWeekDates()
 
@@ -102,7 +119,7 @@ export default function WeeklyMealPage() {
       setWeekMeals(results)
       setLoading(false)
     })
-  }, [])
+  }, [eduCode, schoolCode])
 
   return (
     <div
