@@ -176,6 +176,9 @@ export default function RootLayout({
             {userSchool ? `🏫 ${userSchool}` : 'School Community'}
           </Link>
 
+          {/* 🔹 여기만 아이콘 변경 (📅 → 👤) */}
+          <MenuItem icon="👤" label="내정보" href="/my-info" />
+
           {/* 게시판 */}
           <div
             style={{ position: 'relative' }}
@@ -212,7 +215,7 @@ export default function RootLayout({
           <MenuItem icon="⏰" label="시간표" href="/timetable" />
           <MenuItem icon="📊" label="모의고사" href="/scores" />
           <MenuItem icon="🏫" label="학교인증" href="/school_certification" />
-          <MenuItem icon="🍽️" label="급식표" href="/meal" />
+          <MenuItem icon="🍚" label="급식표" href="/meal" />
 
           {/* 로그인/로그아웃 */}
           <div style={{ marginTop: 'auto' }}>
