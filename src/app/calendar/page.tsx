@@ -255,6 +255,7 @@ export default function CalendarPage() {
   }, [year])
 
   // 🎓 -------- 학사일정 Fetch --------
+  // 🎓 -------- 학사일정 Fetch --------
   useEffect(() => {
     async function loadAcademic() {
       try {
@@ -288,7 +289,7 @@ export default function CalendarPage() {
 
         // 날짜별 그룹화
         const map: Record<string, AcademicEvent[]> = {}
-        mapped.forEach((ev) => {
+        mapped.forEach((ev: AcademicEvent) => {
           if (!map[ev.date]) map[ev.date] = []
           map[ev.date].push(ev)
         })
