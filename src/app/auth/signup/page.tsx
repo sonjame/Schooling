@@ -7,6 +7,7 @@ import Link from 'next/link'
 
 export default function SignupPage() {
   const [username, setUsername] = useState('')
+  const [name, setName] = useState('')
   const [password, setPassword] = useState('')
   const [password2, setPassword2] = useState('')
 
@@ -91,6 +92,7 @@ export default function SignupPage() {
 
     const newUser = {
       username,
+      name,
       password,
       school,
       schoolCode,
@@ -113,7 +115,7 @@ export default function SignupPage() {
 
   // 회원가입 → 중간 체크 모달
   const handleSubmit = () => {
-    if (!username || !password || !password2 || !school) {
+    if (!username || !name || !password || !password2 || !school) {
       showAlert('모든 정보를 입력해주세요.')
       return
     }
@@ -183,6 +185,14 @@ export default function SignupPage() {
               placeholder="아이디를 입력하세요"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
+            />
+
+            {/* ⭐ 이름 입력 필드 추가 */}
+            <input
+              style={{ ...inputStyle, marginTop: '12px' }}
+              placeholder="이름을 입력하세요"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
             />
           </div>
 
