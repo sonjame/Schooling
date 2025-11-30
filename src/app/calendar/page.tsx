@@ -17,23 +17,29 @@ type MemoMap = Record<string, TimeMemo[]>
 
 type Holiday = {
   date: string // "YYYY-MM-DD"
-  name: string // 예: "추석", "어린이날"
+  name: string
 }
 
 type Period = {
   id: number
-  label: string // 예: "수행평가 기간", "중간고사 기간"
-  start: string // "YYYY-MM-DD"
-  end: string // "YYYY-MM-DD"
-  color: string // 기간 표시 선 색상
+  label: string
+  start: string
+  end: string
+  color: string
 }
 
 type CalendarEvent = {
-  date: string // "YYYY-MM-DD"
-  title: string // 일정 제목
+  date: string
+  title: string
 }
 
-// 🔐 localStorage 키 모음 (HomePage와 맞추기)
+// 🎓 학사일정 타입
+type AcademicEvent = {
+  date: string // YYYY-MM-DD
+  title: string // 일정명
+}
+
+// 🔐 localStorage keys
 const STORAGE_KEYS = {
   memos: 'calendar_memos',
   colors: 'calendar_colors',
@@ -48,16 +54,9 @@ const STORAGE_KEYS = {
   contextDate: 'calendar_context_date',
 }
 
-// 🎨 사용할 셀 색상 5가지 (연한 파스텔 톤)
-const COLOR_PRESETS = [
-  '#DBEAFE', // 연한 파랑
-  '#FFE4D5', // 연한 주황
-  '#DCFCE7', // 연한 초록
-  '#FEE2E2', // 연한 빨강/핑크
-  '#EDE9FE', // 연한 보라
-]
+const COLOR_PRESETS = ['#DBEAFE', '#FFE4D5', '#DCFCE7', '#FEE2E2', '#EDE9FE']
 
-// 📦 날짜 메모/기간 → Home에서 사용할 events 배열로 변환
+// 캘린더 이벤트 구성 함수
 function buildCalendarEvents(
   dateNoteTitles: Record<string, string>,
   dateNoteContents: Record<string, string[]>,
@@ -65,7 +64,6 @@ function buildCalendarEvents(
 ): CalendarEvent[] {
   const map: Record<string, string[]> = {}
 
-  // 1) 날짜 메모 제목 (1개)
   for (const [date, title] of Object.entries(dateNoteTitles)) {
     const t = title.trim()
     if (!t) continue
@@ -73,7 +71,6 @@ function buildCalendarEvents(
     map[date].push(t)
   }
 
-  // 2) 날짜 메모 내용 (여러 개)
   for (const [date, list] of Object.entries(dateNoteContents)) {
     for (const raw of list) {
       const t = raw.trim()
@@ -83,7 +80,6 @@ function buildCalendarEvents(
     }
   }
 
-  // 3) 기간 (시작일 기준으로만 넣음)
   for (const p of periods) {
     const t = p.label.trim()
     if (!t || !p.start) continue
@@ -94,10 +90,9 @@ function buildCalendarEvents(
   const events: CalendarEvent[] = []
   for (const [date, titles] of Object.entries(map)) {
     const uniq = Array.from(new Set(titles))
-    for (const t of uniq) {
-      events.push({ date, title: t })
-    }
+    for (const t of uniq) events.push({ date, title: t })
   }
+
   return events
 }
 
@@ -111,62 +106,54 @@ function getHolidayFromMap(
 
 export default function CalendarPage() {
   const today = new Date()
-
   const [year, setYear] = useState(today.getFullYear())
-  const [month, setMonth] = useState(today.getMonth()) // 0 ~ 11
+  const [month, setMonth] = useState(today.getMonth())
+
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [contextDate, setContextDate] = useState<string | null>(null)
 
   const [memos, setMemos] = useState<MemoMap>({})
   const [customColors, setCustomColors] = useState<Record<string, string>>({})
-
   const [dateNoteTitles, setDateNoteTitles] = useState<Record<string, string>>(
     {}
   )
   const [dateNoteContents, setDateNoteContents] = useState<
     Record<string, string[]>
   >({})
-
   const [periods, setPeriods] = useState<Period[]>([])
 
   const [holidayMap, setHolidayMap] = useState<Record<string, Holiday>>({})
   const [holidayLoading, setHolidayLoading] = useState(false)
-
   const [loaded, setLoaded] = useState(false)
 
-  // 🟣 새 일정 모달 상태
+  // 🎓 학사일정
+  const [academicEvents, setAcademicEvents] = useState<
+    Record<string, AcademicEvent[]>
+  >({})
+
+  // modal states
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [modalStartDate, setModalStartDate] = useState<string>('')
-  const [modalEndDate, setModalEndDate] = useState<string>('')
+  const [modalStartDate, setModalStartDate] = useState('')
+  const [modalEndDate, setModalEndDate] = useState('')
   const [modalRangeType, setModalRangeType] = useState<'single' | 'range'>(
     'single'
   )
-
-  // 🔔 시간: 시작 / 종료
-  const [modalStartTime, setModalStartTime] = useState<string>('')
-  const [modalEndTime, setModalEndTime] = useState<string>('')
-
-  // 제목 / 설명
-  const [modalTitle, setModalTitle] = useState<string>('')
-  const [modalDescription, setModalDescription] = useState<string>('')
-
-  // 🎨 셀 색상 (5가지 중 하나 or 빈 값)
-  const [modalColor, setModalColor] = useState<string>('')
-
-  // ✏️ 현재 모달에서 수정 중인 일정 인덱스 (null이면 "새 일정 추가" 모드)
+  const [modalStartTime, setModalStartTime] = useState('')
+  const [modalEndTime, setModalEndTime] = useState('')
+  const [modalTitle, setModalTitle] = useState('')
+  const [modalDescription, setModalDescription] = useState('')
+  const [modalColor, setModalColor] = useState('')
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
 
   const todayKey = `${today.getFullYear()}-${String(
     today.getMonth() + 1
   ).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
 
-  // ✅ 처음 로드
+  // -------- 로컬 저장 데이터 불러오기 --------
   useEffect(() => {
     try {
       const savedYear = localStorage.getItem(STORAGE_KEYS.viewYear)
       const savedMonth = localStorage.getItem(STORAGE_KEYS.viewMonth)
-      const savedSelectedDate = localStorage.getItem(STORAGE_KEYS.selectedDate)
-      const savedContextDate = localStorage.getItem(STORAGE_KEYS.contextDate)
 
       if (savedYear && !Number.isNaN(parseInt(savedYear, 10))) {
         setYear(parseInt(savedYear, 10))
@@ -174,12 +161,11 @@ export default function CalendarPage() {
       if (savedMonth && !Number.isNaN(parseInt(savedMonth, 10))) {
         setMonth(parseInt(savedMonth, 10))
       }
-      if (savedSelectedDate) {
-        setSelectedDate(savedSelectedDate)
-      }
-      if (savedContextDate) {
-        setContextDate(savedContextDate)
-      }
+
+      const savedSelected = localStorage.getItem(STORAGE_KEYS.selectedDate)
+      const savedContext = localStorage.getItem(STORAGE_KEYS.contextDate)
+      if (savedSelected) setSelectedDate(savedSelected)
+      if (savedContext) setContextDate(savedContext)
 
       const savedMemos = localStorage.getItem(STORAGE_KEYS.memos)
       const savedColors = localStorage.getItem(STORAGE_KEYS.colors)
@@ -192,17 +178,16 @@ export default function CalendarPage() {
       if (savedTitles) setDateNoteTitles(JSON.parse(savedTitles))
       if (savedContents) setDateNoteContents(JSON.parse(savedContents))
       if (savedPeriods) setPeriods(JSON.parse(savedPeriods))
-    } catch (e) {
-      console.warn('캘린더 데이터 로드 중 오류:', e)
+    } catch (err) {
+      console.warn('로드 오류: ', err)
     } finally {
       setLoaded(true)
     }
   }, [])
 
-  // ✅ 데이터 변경 → 저장 + Home events
+  // -------- 데이터 변경 → 저장 + Home events --------
   useEffect(() => {
     if (!loaded) return
-
     try {
       localStorage.setItem(STORAGE_KEYS.memos, JSON.stringify(memos))
       localStorage.setItem(STORAGE_KEYS.colors, JSON.stringify(customColors))
@@ -213,18 +198,14 @@ export default function CalendarPage() {
       )
       localStorage.setItem(STORAGE_KEYS.periods, JSON.stringify(periods))
 
-      const events = buildCalendarEvents(
-        dateNoteTitles,
-        dateNoteContents,
-        periods
-      )
-      localStorage.setItem(STORAGE_KEYS.events, JSON.stringify(events))
-    } catch (e) {
-      console.warn('캘린더 데이터 저장 중 오류:', e)
+      const evs = buildCalendarEvents(dateNoteTitles, dateNoteContents, periods)
+      localStorage.setItem(STORAGE_KEYS.events, JSON.stringify(evs))
+    } catch {
+      // ignore
     }
   }, [memos, customColors, dateNoteTitles, dateNoteContents, periods, loaded])
 
-  // ✅ 뷰 상태 저장
+  // ✅ 뷰 상태 저장 (연/월/선택된 날짜)
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEYS.viewYear, String(year))
@@ -242,43 +223,84 @@ export default function CalendarPage() {
         localStorage.removeItem(STORAGE_KEYS.contextDate)
       }
     } catch (e) {
-      console.warn('캘린더 뷰 상태 저장 중 오류:', e)
+      console.warn('뷰 상태 저장 오류:', e)
     }
   }, [year, month, selectedDate, contextDate])
 
-  // 🔄 연도 바뀔 때 공휴일
+  // -------- 공휴일 Fetch --------
   useEffect(() => {
     let cancelled = false
-
-    async function loadHolidays() {
+    async function load() {
       try {
         setHolidayLoading(true)
         const res = await fetch(`/api/holidays?year=${year}`)
-        if (!res.ok) throw new Error('failed to fetch holidays')
+        if (!res.ok) throw new Error('holiday error')
         const data: Holiday[] = await res.json()
-
         if (cancelled) return
-
         const map: Record<string, Holiday> = {}
-        for (const h of data) {
-          map[h.date] = h
-        }
+        for (const h of data) map[h.date] = h
         setHolidayMap(map)
-      } catch (e) {
-        console.error('공휴일 가져오기 실패:', e)
+      } catch {
         setHolidayMap({})
       } finally {
-        if (!cancelled) {
-          setHolidayLoading(false)
-        }
+        if (!cancelled) setHolidayLoading(false)
       }
     }
-
-    loadHolidays()
+    load()
     return () => {
       cancelled = true
     }
   }, [year])
+
+  // 🎓 -------- 학사일정 Fetch --------
+  // 🎓 -------- 학사일정 Fetch --------
+  useEffect(() => {
+    async function loadAcademic() {
+      try {
+        // 📌 현재 보고 있는 달 기준
+        const y = year
+        const m = String(month + 1).padStart(2, '0')
+
+        const from = `${y}${m}01`
+        const to = `${y}${m}31`
+
+        const API_URL = `https://open.neis.go.kr/hub/SchoolSchedule?KEY=109e3660c3624bf5a4803631891234ef&Type=json&ATPT_OFCDC_SC_CODE=J10&SD_SCHUL_CODE=7531116&AA_FROM_YMD=${from}&AA_TO_YMD=${to}`
+
+        const res = await fetch(API_URL)
+        if (!res.ok) throw new Error('학사일정 오류')
+
+        const json = await res.json()
+        const rows = json.SchoolSchedule?.[1]?.row || []
+
+        // 📌 달력 key(YYYY-MM-DD)로 변환 필수!
+        const mapped = rows.map((item: any) => {
+          const ymd = item.AA_YMD // "20250304"
+          const yyyy = ymd.slice(0, 4)
+          const mm = ymd.slice(4, 6)
+          const dd = ymd.slice(6, 8)
+
+          return {
+            date: `${yyyy}-${mm}-${dd}`,
+            title: item.EVENT_NM,
+          }
+        })
+
+        // 날짜별 그룹화
+        const map: Record<string, AcademicEvent[]> = {}
+        mapped.forEach((ev) => {
+          if (!map[ev.date]) map[ev.date] = []
+          map[ev.date].push(ev)
+        })
+
+        setAcademicEvents(map)
+      } catch (err) {
+        console.error('학사일정 불러오기 실패:', err)
+        setAcademicEvents({})
+      }
+    }
+
+    loadAcademic()
+  }, [year, month])
 
   // 📅 셀 생성
   const firstDay = new Date(year, month, 1).getDay()
@@ -295,7 +317,42 @@ export default function CalendarPage() {
     cells.push({ day: d, key })
   }
 
-  // 🔧 월 이동
+  // ✅ 날짜 클릭 시: 모달 오픈
+  const openScheduleModal = (dateKey: string) => {
+    setSelectedDate(dateKey)
+    setContextDate(dateKey)
+
+    setModalStartDate(dateKey)
+    setModalEndDate(dateKey)
+    setModalRangeType('single')
+
+    const existingTitle = dateNoteTitles[dateKey] ?? ''
+    const existingColor = customColors[dateKey] ?? ''
+
+    setModalTitle(existingTitle)
+    setModalStartTime('')
+    setModalEndTime('')
+    setModalDescription('')
+    setModalColor(existingColor)
+    setEditingIndex(null)
+    setIsModalOpen(true)
+  }
+
+  const handleRightClickDay = (
+    e: MouseEvent<HTMLButtonElement>,
+    key: string | null
+  ) => {
+    e.preventDefault()
+    if (!key) return
+    openScheduleModal(key)
+  }
+
+  const handleModalClose = () => {
+    setIsModalOpen(false)
+    setEditingIndex(null)
+  }
+
+  // 🔧 이전달 / 다음달
   const handlePrevMonth = () => {
     let newYear = year
     let newMonth = month - 1
@@ -322,43 +379,6 @@ export default function CalendarPage() {
     setContextDate(null)
   }
 
-  // ✅ 날짜 클릭 시: 모달 오픈 (기본은 "새 일정 추가" 모드)
-  const openScheduleModal = (dateKey: string) => {
-    setSelectedDate(dateKey)
-    setContextDate(dateKey)
-    setModalStartDate(dateKey)
-    setModalEndDate(dateKey)
-    setModalRangeType('single')
-
-    const existingTitle = dateNoteTitles[dateKey] ?? ''
-    const existingColor = customColors[dateKey] ?? ''
-
-    // 날짜 대표 제목 / 색상만 불러오고,
-    // 시간/설명은 "새 일정" 추가를 위해 비워둠
-    setModalTitle(existingTitle)
-    setModalStartTime('')
-    setModalEndTime('')
-    setModalDescription('')
-    setModalColor(existingColor)
-    setEditingIndex(null)
-
-    setIsModalOpen(true)
-  }
-
-  const handleRightClickDay = (
-    e: MouseEvent<HTMLButtonElement>,
-    key: string | null
-  ) => {
-    e.preventDefault()
-    if (!key) return
-    openScheduleModal(key)
-  }
-
-  const handleModalClose = () => {
-    setIsModalOpen(false)
-    setEditingIndex(null)
-  }
-
   // ✏️ 기존 일정 "수정" 버튼 / 리스트 아이템 클릭 시
   const handleEditExistingSchedule = (index: number) => {
     const dateKey = selectedDate || modalStartDate
@@ -376,7 +396,7 @@ export default function CalendarPage() {
     setModalDescription(targetDesc)
   }
 
-  // 🗑 기존 일정 하나만 삭제
+  // 🗑 기존 일정 하나 삭제
   const handleDeleteScheduleItem = (index: number) => {
     const dateKey = selectedDate || modalStartDate
     if (!dateKey) return
@@ -410,7 +430,6 @@ export default function CalendarPage() {
       return next
     })
 
-    // 제목은 그대로 두고, 필요하면 사용자가 수정 가능
     setEditingIndex(null)
     setModalStartTime('')
     setModalEndTime('')
@@ -418,7 +437,7 @@ export default function CalendarPage() {
   }
 
   // ✅ single / range 처리 + 설명/시간/색상 저장
-  const handleModalSubmit = (e: FormEvent) => {
+  const handleModalSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!modalStartDate) {
       alert('시작일을 선택하세요.')
@@ -439,16 +458,16 @@ export default function CalendarPage() {
         : modalTitle.trim()
 
     if (modalRangeType === 'single') {
-      // 🔹 하루 일정 모드
+      // 🔹 하루 일정
 
-      // 대표 제목 (날짜 단위) 갱신
+      // 날짜 대표 제목
       setDateNoteTitles((prev) => ({
         ...prev,
         [start]: modalTitle.trim(),
       }))
 
       if (editingIndex !== null) {
-        // ✏ 기존 일정 "수정" 모드
+        // ✏ 기존 일정 수정
         setDateNoteContents((prev) => {
           const next = { ...prev }
           const list = next[start] ? [...next[start]] : []
@@ -471,20 +490,16 @@ export default function CalendarPage() {
           return next
         })
       } else {
-        // ➕ 새 일정 추가 모드
-
-        // 설명: 배열에 "추가"
+        // ➕ 새 일정 추가
         setDateNoteContents((prev) => {
           const next = { ...prev }
           if (!descriptionText) return next
-
           const list = next[start] ? [...next[start]] : []
           list.push(descriptionText)
           next[start] = list
           return next
         })
 
-        // 시간 메모: 항상 배열에 "추가" (시간이 없어도 저장)
         setMemos((prev) => {
           const next = { ...prev }
           const list = next[start] ? [...next[start]] : []
@@ -500,7 +515,7 @@ export default function CalendarPage() {
         })
       }
 
-      // 이 날짜의 셀 색상 (대표 색 1개 유지)
+      // 셀 색상
       setCustomColors((prev) => {
         const next = { ...prev }
         if (modalColor) {
@@ -511,7 +526,7 @@ export default function CalendarPage() {
         return next
       })
     } else {
-      // 🔹 기간 모드
+      // 🔹 기간 일정
       if (start && end && start <= end) {
         setPeriods((prev) => [
           ...prev,
@@ -525,7 +540,6 @@ export default function CalendarPage() {
         ])
       }
 
-      // 기간 시작일 기준 설명 (여러 개 누적 가능)
       setDateNoteContents((prev) => {
         const next = { ...prev }
         if (!descriptionText) return next
@@ -535,7 +549,6 @@ export default function CalendarPage() {
         return next
       })
 
-      // 기간 시작일 셀 색상
       setCustomColors((prev) => {
         const next = { ...prev }
         if (modalColor) {
@@ -641,6 +654,7 @@ export default function CalendarPage() {
               <div className="weekday sat">토</div>
             </div>
 
+            {/* 📌 달력 셀 렌더링 */}
             <div className="calendar-grid">
               {cellsWithRender.map((cell, index) => {
                 if (cell.day === null) {
@@ -701,9 +715,14 @@ export default function CalendarPage() {
                     ? dateNoteTitles[cell.key].trim()
                     : ''
 
-                // 👉 이 날짜에 저장된 일정 개수 (설명 기준)
                 const scheduleCount =
                   (cell.key && dateNoteContents[cell.key]?.length) || 0
+
+                // 🎓 학사일정
+                const academicList =
+                  cell.key && academicEvents[cell.key]
+                    ? academicEvents[cell.key]
+                    : []
 
                 const dayClassNames = [
                   'day-cell',
@@ -723,11 +742,14 @@ export default function CalendarPage() {
                     className={dayClassNames}
                     style={dayStyle}
                     onClick={() => {
-                      if (cell.key) {
-                        openScheduleModal(cell.key)
-                      }
+                      if (cell.key) openScheduleModal(cell.key)
                     }}
-                    onContextMenu={(e) => handleRightClickDay(e, cell.key)}
+                    onContextMenu={(e) =>
+                      handleRightClickDay(
+                        e as unknown as MouseEvent<HTMLButtonElement>,
+                        cell.key
+                      )
+                    }
                   >
                     <div
                       style={{
@@ -747,12 +769,14 @@ export default function CalendarPage() {
 
                       <span className="day-number">{cell.day}</span>
 
+                      {/* 공휴일 이름 */}
                       {holidayInfo && (
                         <div className="holiday-cell-name">
                           {holidayInfo.name}
                         </div>
                       )}
 
+                      {/* 사용자 지정 제목 */}
                       {dateTitle && (
                         <div className="day-title">
                           {dateTitle}
@@ -764,6 +788,19 @@ export default function CalendarPage() {
                         </div>
                       )}
 
+                      {/* 🎓 학사일정 태그 */}
+                      {academicList.length > 0 && (
+                        <div className="academic-tag">
+                          {academicList[0].title}
+                          {academicList.length > 1 && (
+                            <span style={{ fontSize: 9, marginLeft: 2 }}>
+                              외 {academicList.length - 1}개
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* 기간 태그 */}
                       {firstPeriodForDay && (
                         <div className="period-tag">
                           <span className="period-tag-label">
@@ -772,8 +809,10 @@ export default function CalendarPage() {
                         </div>
                       )}
 
+                      {/* 메모 점 표시 */}
                       {hasAnyNote && <span className="memo-dot" />}
 
+                      {/* 기간 라인 */}
                       {isInPeriod && firstPeriodForDay && (
                         <div
                           className="period-line"
@@ -823,7 +862,7 @@ export default function CalendarPage() {
                 />
               </div>
 
-              {/* 기간 설정 */}
+              {/* 기간 */}
               <div className="modal-field">
                 <label className="modal-label">기간 설정</label>
                 <div className="modal-radio-row">
@@ -844,6 +883,7 @@ export default function CalendarPage() {
                     <span>기간 설정</span>
                   </label>
                 </div>
+
                 {modalRangeType === 'range' && (
                   <input
                     type="date"
@@ -854,7 +894,7 @@ export default function CalendarPage() {
                 )}
               </div>
 
-              {/* 시간 입력 (선택) */}
+              {/* 시간 */}
               <div className="modal-field">
                 <label className="modal-label">시간 (선택)</label>
                 <div className="modal-time-row">
@@ -874,7 +914,7 @@ export default function CalendarPage() {
                 </div>
               </div>
 
-              {/* 셀 색상 선택 (5가지 고정) */}
+              {/* 셀 색상 */}
               <div className="modal-field">
                 <label className="modal-label">셀 색상 (선택)</label>
                 <div className="modal-color-row">
@@ -902,13 +942,13 @@ export default function CalendarPage() {
                 </div>
               </div>
 
-              {/* 제목 (날짜 대표 제목) */}
+              {/* 제목 */}
               <div className="modal-field">
                 <label className="modal-label">제목 (날짜 요약)</label>
                 <input
                   type="text"
                   className="modal-input"
-                  placeholder="예: 시험 기간, 수행평가 등"
+                  placeholder="예: 시험 기간, 수행평가"
                   value={modalTitle}
                   onChange={(e) => setModalTitle(e.target.value)}
                 />
@@ -919,13 +959,13 @@ export default function CalendarPage() {
                 <label className="modal-label">설명</label>
                 <textarea
                   className="modal-textarea"
-                  placeholder="일정 설명을 입력하세요"
+                  placeholder="일정 상세 설명 입력"
                   value={modalDescription}
                   onChange={(e) => setModalDescription(e.target.value)}
                 />
               </div>
 
-              {/* 👉 이 날짜의 기존 일정 리스트 */}
+              {/* 기존 일정 리스트 */}
               {selectedDate &&
                 (() => {
                   const dateKey = selectedDate
@@ -953,7 +993,6 @@ export default function CalendarPage() {
                             <div
                               key={i}
                               className="schedule-list-item"
-                              // 🔹 리스트 아이템 전체 클릭 → 일정 불러오기
                               onClick={() => handleEditExistingSchedule(i)}
                             >
                               <div className="schedule-list-main">
@@ -967,7 +1006,7 @@ export default function CalendarPage() {
                                   type="button"
                                   className="schedule-edit-btn"
                                   onClick={(e) => {
-                                    e.stopPropagation() // 부모 onClick 막기
+                                    e.stopPropagation()
                                     handleEditExistingSchedule(i)
                                   }}
                                 >
@@ -977,7 +1016,7 @@ export default function CalendarPage() {
                                   type="button"
                                   className="schedule-delete-btn"
                                   onClick={(e) => {
-                                    e.stopPropagation() // 부모 onClick 막기
+                                    e.stopPropagation()
                                     handleDeleteScheduleItem(i)
                                   }}
                                 >
@@ -992,12 +1031,10 @@ export default function CalendarPage() {
                   )
                 })()}
 
-              {/* 저장 버튼 */}
               <button type="submit" className="modal-submit-btn">
                 {editingIndex === null ? '일정 추가' : '일정 수정 저장'}
               </button>
 
-              {/* 날짜 전체 삭제 버튼 */}
               <button
                 type="button"
                 className="modal-delete-btn"
@@ -1120,8 +1157,8 @@ export default function CalendarPage() {
           cursor: pointer;
           padding: 0;
           box-sizing: border-box;
-          position: relative; /* 🔹 제목/내용이 넘쳐도 셀 높이 고정 */
-          overflow: hidden; /* 🔹 내부 내용 오버플로우 숨김 */
+          position: relative;
+          overflow: hidden;
         }
 
         .day-cell.sun,
@@ -1181,7 +1218,6 @@ export default function CalendarPage() {
           white-space: nowrap;
         }
 
-        /* 🔹 제목이 길어도 셀 높이 안늘어나게 2줄까지만 표시 */
         .day-title {
           margin-top: 4px;
           font-size: 9px;
@@ -1189,7 +1225,7 @@ export default function CalendarPage() {
           color: #555555;
           text-align: center;
           width: 100%;
-          max-height: 24px; /* 2줄 정도 */
+          max-height: 24px;
           overflow: hidden;
           display: -webkit-box;
           -webkit-line-clamp: 2;
@@ -1230,6 +1266,22 @@ export default function CalendarPage() {
           width: 70%;
           height: 3px;
           border-radius: 999px;
+        }
+
+        /* 📌 학사일정 스타일 */
+        .academic-tag {
+          margin-top: 2px;
+          font-size: 9px;
+          line-height: 1.2;
+          padding: 1px 6px;
+          border-radius: 999px;
+          background: rgba(187, 222, 251, 0.8);
+          color: #0d47a1;
+          border: 1px solid #90caf9;
+          max-width: 100%;
+          overflow: hidden;
+          white-space: nowrap;
+          text-overflow: ellipsis;
         }
 
         .modal-backdrop {
@@ -1424,7 +1476,7 @@ export default function CalendarPage() {
           gap: 6px;
           padding: 4px 0;
           border-bottom: 1px solid #e5e7eb;
-          cursor: pointer; /* 🔹 리스트 전체도 클릭 가능 */
+          cursor: pointer;
         }
 
         .schedule-list-item:last-child {
