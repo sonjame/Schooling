@@ -255,7 +255,6 @@ export default function CalendarPage() {
   }, [year])
 
   // 🎓 -------- 학사일정 Fetch --------
-  // 🎓 -------- 학사일정 Fetch --------
   useEffect(() => {
     async function loadAcademic() {
       try {
