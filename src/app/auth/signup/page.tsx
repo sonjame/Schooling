@@ -1,203 +1,191 @@
-"use client";
+'use client'
 
-import { useSearchParams } from "next/navigation";
-import { useState, useEffect } from "react";
-import Link from "next/link";
+import { useSearchParams } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
 
-const API_KEY = "32cbd596f1b64e7abc94e1eb85ca5a06";
+const API_KEY = '32cbd596f1b64e7abc94e1eb85ca5a06'
 
-export default function SignupPage() {
-  const searchParams = useSearchParams();
+export default function SignupClient() {
+  const searchParams = useSearchParams()
 
   // ⭐ 입력 값
-  const [verified, setVerified] = useState(false);
+  const [verified, setVerified] = useState(false)
 
-  const [realName, setRealName] = useState(""); // 🔥 실명
-  const [username, setUsername] = useState(""); // 로그인 아이디
-  const [password, setPassword] = useState("");
-  const [password2, setPassword2] = useState("");
+  const [realName, setRealName] = useState('') // 🔥 실명
+  const [username, setUsername] = useState('') // 로그인 아이디
+  const [password, setPassword] = useState('')
+  const [password2, setPassword2] = useState('')
 
-  const [school, setSchool] = useState("");
-  const [schoolCode, setSchoolCode] = useState("");
-  const [eduCode, setEduCode] = useState("");
-  const [level, setLevel] = useState("");
+  const [school, setSchool] = useState('')
+  const [schoolCode, setSchoolCode] = useState('')
+  const [eduCode, setEduCode] = useState('')
+  const [level, setLevel] = useState('')
 
-  const [grade, setGrade] = useState("1학년");
+  const [grade, setGrade] = useState('1학년')
 
-  const [users, setUsers] = useState<any[]>([]);
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [users, setUsers] = useState<any[]>([])
+  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  const [modalMessage, setModalMessage] = useState("");
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [showModal, setShowModal] = useState(false)
+  const [modalMessage, setModalMessage] = useState('')
 
   // 🔹 소셜로그인에서 넘어온 값 적용
   useEffect(() => {
-    const socialName = searchParams.get("name");
-    const socialEmail = searchParams.get("email");
-    const socialId = searchParams.get("id");
+    const socialName = searchParams.get('name')
+    const socialEmail = searchParams.get('email')
+    const socialId = searchParams.get('id')
 
     if (socialName && socialEmail && socialId) {
       localStorage.setItem(
-        "socialUser",
+        'socialUser',
         JSON.stringify({
           id: socialId,
           name: socialName,
           email: socialEmail,
         })
-      );
-
-      // 🔥 입력칸에 자동으로 채우는 코드 제거 (아무것도 넣지 않음)
-      // setRealName(socialName);
-      // setUsername(socialName);
+      )
     }
-  }, [searchParams]);
+  }, [searchParams])
 
   // 기존 유저 불러오기
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem("users") || "[]");
-    setUsers(saved);
-  }, []);
+    const saved = JSON.parse(localStorage.getItem('users') || '[]')
+    setUsers(saved)
+  }, [])
 
   // 인증 여부 확인
   useEffect(() => {
-    const v = searchParams.get("verified");
-    setVerified(v === "1");
-  }, [searchParams]);
+    const v = searchParams.get('verified')
+    setVerified(v === '1')
+  }, [searchParams])
 
   // 공통 alert
   const showAlert = (msg: string) => {
-    setModalMessage(msg);
-    setShowModal(true);
-    setTimeout(() => setShowModal(false), 1500);
-  };
+    setModalMessage(msg)
+    setShowModal(true)
+    setTimeout(() => setShowModal(false), 1500)
+  }
 
   // 인증 방식들
-  const handleKakaoAuth = () => (window.location.href = "/api/auth/kakao");
-  const handleGoogleAuth = () => (window.location.href = "/api/auth/google");
-  const handleEmailAuth = () => (window.location.href = "/auth/email");
+  const handleKakaoAuth = () => (window.location.href = '/api/auth/kakao')
+  const handleGoogleAuth = () => (window.location.href = '/api/auth/google')
+  const handleEmailAuth = () => (window.location.href = '/auth/email')
 
   // 학교 검색
   const searchSchool = async (keyword: string) => {
-    setSchool(keyword);
-    setIsSearching(true);
+    setSchool(keyword)
+    setIsSearching(true)
 
     if (keyword.trim().length < 2) {
-      setSearchResults([]);
-      return;
+      setSearchResults([])
+      return
     }
 
     try {
       const url = `https://open.neis.go.kr/hub/schoolInfo?KEY=${API_KEY}&Type=json&pIndex=1&pSize=20&SCHUL_NM=${encodeURIComponent(
         keyword
-      )}`;
-      const res = await fetch(url);
-      const data = await res.json();
+      )}`
+      const res = await fetch(url)
+      const data = await res.json()
 
       if (data.schoolInfo && data.schoolInfo[1]?.row) {
-        setSearchResults(data.schoolInfo[1].row);
+        setSearchResults(data.schoolInfo[1].row)
       } else {
-        setSearchResults([]);
+        setSearchResults([])
       }
     } catch (err) {
-      console.error(err);
+      console.error(err)
     }
-  };
+  }
 
   const selectSchool = (item: any) => {
-    setSchool(item.SCHUL_NM);
-    setSchoolCode(item.SD_SCHUL_CODE);
-    setEduCode(item.ATPT_OFCDC_SC_CODE);
-    setLevel(item.SCHUL_KND_SC_NM);
-    setSearchResults([]);
-    setIsSearching(false);
-  };
+    setSchool(item.SCHUL_NM)
+    setSchoolCode(item.SD_SCHUL_CODE)
+    setEduCode(item.ATPT_OFCDC_SC_CODE)
+    setLevel(item.SCHUL_KND_SC_NM)
+    setSearchResults([])
+    setIsSearching(false)
+  }
 
   // 회원가입 제출 전 체크
   const handleSubmit = () => {
     if (!realName || !username || !password || !password2 || !school) {
-      showAlert("모든 정보를 입력해주세요.");
-      return;
+      showAlert('모든 정보를 입력해주세요.')
+      return
     }
 
     if (password !== password2) {
-      showAlert("비밀번호가 일치하지 않습니다.");
-      return;
+      showAlert('비밀번호가 일치하지 않습니다.')
+      return
     }
 
-    setShowConfirm(true);
-  };
+    setShowConfirm(true)
+  }
 
   // 회원가입 최종 처리
   const handleFinalSubmit = () => {
-    const exists = users.find((u) => u.username === username);
+    const exists = users.find((u) => u.username === username)
     if (exists) {
-      showAlert("이미 존재하는 아이디입니다.");
-      return;
+      showAlert('이미 존재하는 아이디입니다.')
+      return
     }
 
-    const social = JSON.parse(localStorage.getItem("socialUser") || "{}");
+    const social = JSON.parse(localStorage.getItem('socialUser') || '{}')
 
-    // 🔥 최종 저장될 회원정보
     const newUser = {
-      username, // 로그인용 아이디
+      username,
       password,
-
-      // 🔥 실명
       name: realName,
-
-      // 🔥 소셜에서 받아온 이메일
-      email: social.email || "",
-
+      email: social.email || '',
       social_id: social.id || null,
-
       school,
       schoolCode,
       eduCode,
       level,
       grade,
-
       verified_student: false,
-    };
+    }
 
-    const updated = [...users, newUser];
-    localStorage.setItem("users", JSON.stringify(updated));
+    const updated = [...users, newUser]
+    localStorage.setItem('users', JSON.stringify(updated))
 
-    showAlert("회원가입 완료!");
-    setTimeout(() => (window.location.href = "/auth/login"), 1500);
-  };
+    showAlert('회원가입 완료!')
+    setTimeout(() => (window.location.href = '/auth/login'), 1500)
+  }
 
   // 스타일
   const cardStyle: React.CSSProperties = {
-    width: "420px",
-    background: "white",
-    borderRadius: "16px",
-    padding: "40px 30px",
-    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-  };
+    width: '420px',
+    background: 'white',
+    borderRadius: '16px',
+    padding: '40px 30px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+  }
 
   const inputStyle: React.CSSProperties = {
-    width: "100%",
-    padding: "12px",
-    borderRadius: "8px",
-    border: "1.5px solid #ccc",
-    fontSize: "15px",
-    outlineColor: "#4FC3F7",
-    boxSizing: "border-box",
-  };
+    width: '100%',
+    padding: '12px',
+    borderRadius: '8px',
+    border: '1.5px solid #ccc',
+    fontSize: '15px',
+    outlineColor: '#4FC3F7',
+    boxSizing: 'border-box',
+  }
 
   return (
     <>
       <div
         style={{
-          minHeight: "100vh",
-          background: "#E3F2FD",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          padding: "20px",
+          minHeight: '100vh',
+          background: '#E3F2FD',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: '20px',
         }}
       >
         {/* STEP 1: 인증 */}
@@ -205,15 +193,17 @@ export default function SignupPage() {
           <div style={cardStyle}>
             <h2
               style={{
-                fontSize: "22px",
+                fontSize: '22px',
                 fontWeight: 700,
-                color: "#4FC3F7",
-                marginBottom: "6px",
+                color: '#4FC3F7',
+                marginBottom: '6px',
               }}
             >
               🔐 본인 인증
             </h2>
-            <p style={{ fontSize: "14px", color: "#555", marginBottom: "20px" }}>
+            <p
+              style={{ fontSize: '14px', color: '#555', marginBottom: '20px' }}
+            >
               회원가입을 위해 하나를 선택해주세요.
             </p>
 
@@ -246,11 +236,11 @@ export default function SignupPage() {
           <div style={cardStyle}>
             <h2
               style={{
-                fontSize: "22px",
+                fontSize: '22px',
                 fontWeight: 700,
-                color: "#4FC3F7",
-                textAlign: "center",
-                marginBottom: "10px",
+                color: '#4FC3F7',
+                textAlign: 'center',
+                marginBottom: '10px',
               }}
             >
               📝 회원가입
@@ -266,32 +256,32 @@ export default function SignupPage() {
 
             {/* 아이디 */}
             <input
-              style={{ ...inputStyle, marginTop: "12px" }}
+              style={{ ...inputStyle, marginTop: '12px' }}
               placeholder="아이디를 입력하세요"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
             />
 
             {/* 비밀번호 */}
-            <div style={{ position: "relative", marginTop: "12px" }}>
+            <div style={{ position: 'relative', marginTop: '12px' }}>
               <input
-                type={showPassword ? "text" : "password"}
+                type={showPassword ? 'text' : 'password'}
                 placeholder="비밀번호를 입력하세요"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                style={{ ...inputStyle, paddingRight: "48px" }}
+                style={{ ...inputStyle, paddingRight: '48px' }}
               />
               <span
                 onClick={() => setShowPassword(!showPassword)}
                 style={{
-                  position: "absolute",
-                  right: "12px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  cursor: "pointer",
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  cursor: 'pointer',
                 }}
               >
-                {showPassword ? "🙈" : "👁️"}
+                {showPassword ? '🙈' : '👁️'}
               </span>
             </div>
 
@@ -300,11 +290,11 @@ export default function SignupPage() {
               placeholder="비밀번호를 다시 입력하세요"
               value={password2}
               onChange={(e) => setPassword2(e.target.value)}
-              style={{ ...inputStyle, marginTop: "12px" }}
+              style={{ ...inputStyle, marginTop: '12px' }}
             />
 
             {/* 학교 검색 */}
-            <div style={{ position: "relative", marginTop: "12px" }}>
+            <div style={{ position: 'relative', marginTop: '12px' }}>
               <input
                 style={inputStyle}
                 placeholder="학교명을 입력하세요 (자동완성)"
@@ -315,15 +305,15 @@ export default function SignupPage() {
               {isSearching && searchResults.length > 0 && (
                 <ul
                   style={{
-                    position: "absolute",
-                    top: "50px",
-                    width: "100%",
-                    background: "white",
-                    border: "1px solid #ccc",
-                    borderRadius: "8px",
-                    maxHeight: "180px",
-                    overflowY: "auto",
-                    listStyle: "none",
+                    position: 'absolute',
+                    top: '50px',
+                    width: '100%',
+                    background: 'white',
+                    border: '1px solid #ccc',
+                    borderRadius: '8px',
+                    maxHeight: '180px',
+                    overflowY: 'auto',
+                    listStyle: 'none',
                     margin: 0,
                     padding: 0,
                     zIndex: 100,
@@ -334,16 +324,16 @@ export default function SignupPage() {
                       key={item.SD_SCHUL_CODE}
                       onClick={() => selectSchool(item)}
                       style={{
-                        padding: "10px 12px",
-                        cursor: "pointer",
-                        borderBottom: "1px solid #eee",
+                        padding: '10px 12px',
+                        cursor: 'pointer',
+                        borderBottom: '1px solid #eee',
                       }}
                     >
                       <strong>{item.SCHUL_NM}</strong>
-                      <span style={{ color: "#777", marginLeft: "6px" }}>
+                      <span style={{ color: '#777', marginLeft: '6px' }}>
                         ({item.LCTN_SC_NM})
                       </span>
-                      <span style={{ color: "#4FC3F7", marginLeft: "6px" }}>
+                      <span style={{ color: '#4FC3F7', marginLeft: '6px' }}>
                         / {item.SCHUL_KND_SC_NM}
                       </span>
                     </li>
@@ -353,7 +343,7 @@ export default function SignupPage() {
             </div>
 
             <select
-              style={{ ...inputStyle, marginTop: "12px" }}
+              style={{ ...inputStyle, marginTop: '12px' }}
               value={grade}
               onChange={(e) => setGrade(e.target.value)}
             >
@@ -362,23 +352,23 @@ export default function SignupPage() {
               <option>3학년</option>
             </select>
 
-            <p style={{ fontSize: "13px", color: "#d32f2f", marginTop: "6px" }}>
+            <p style={{ fontSize: '13px', color: '#d32f2f', marginTop: '6px' }}>
               ⚠️ 한번 선택한 학년은 변경할 수 없습니다.
             </p>
 
             <button
               onClick={handleSubmit}
               style={{
-                width: "100%",
-                background: "#4FC3F7",
-                padding: "12px",
-                borderRadius: "8px",
-                border: "none",
-                color: "white",
-                fontSize: "16px",
+                width: '100%',
+                background: '#4FC3F7',
+                padding: '12px',
+                borderRadius: '8px',
+                border: 'none',
+                color: 'white',
+                fontSize: '16px',
                 fontWeight: 600,
-                cursor: "pointer",
-                marginTop: "20px",
+                cursor: 'pointer',
+                marginTop: '20px',
               }}
             >
               회원가입 완료
@@ -386,17 +376,17 @@ export default function SignupPage() {
 
             <p
               style={{
-                textAlign: "center",
-                marginTop: "20px",
-                fontSize: "14px",
+                textAlign: 'center',
+                marginTop: '20px',
+                fontSize: '14px',
               }}
             >
               이미 계정이 있으신가요?
               <Link
                 href="/auth/login"
-                style={{ color: "#4FC3F7", fontWeight: 600 }}
+                style={{ color: '#4FC3F7', fontWeight: 600 }}
               >
-                {" "}
+                {' '}
                 로그인
               </Link>
             </p>
@@ -506,34 +496,33 @@ export default function SignupPage() {
         }
 
         .cancel-btn,
-.ok-btn {
-  flex: 1;
-  height: 42px;               /* 버튼 높이 추가 */
-  padding: 0;                 /* 패딩을 0으로 변경 → flex 중앙정렬 효과 확실 */
-  
-  display: flex;
-  align-items: center;    
-  justify-content: center;
+        .ok-btn {
+          flex: 1;
+          height: 42px; /* 버튼 높이 추가 */
+          padding: 0; /* 패딩을 0으로 변경 → flex 중앙정렬 효과 확실 */
 
-  border-radius: 10px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  border: none;
-  box-sizing: border-box;     /* 크기 계산 안정화 */
-}
+          display: flex;
+          align-items: center;
+          justify-content: center;
 
-.cancel-btn {
-  background: #e2e2e2;
-  color: #333;
-}
+          border-radius: 10px;
+          font-size: 15px;
+          font-weight: 600;
+          cursor: pointer;
+          border: none;
+          box-sizing: border-box; /* 크기 계산 안정화 */
+        }
 
-.ok-btn {
-  background: #4fc3f7;
-  color: white;
-}
+        .cancel-btn {
+          background: #e2e2e2;
+          color: #333;
+        }
 
+        .ok-btn {
+          background: #4fc3f7;
+          color: white;
+        }
       `}</style>
     </>
-  );
+  )
 }
