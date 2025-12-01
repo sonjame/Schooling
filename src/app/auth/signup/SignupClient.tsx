@@ -188,48 +188,6 @@ export default function SignupClient() {
           padding: '20px',
         }}
       >
-        {/* STEP 1: 인증 */}
-        {!verified && (
-          <div style={cardStyle}>
-            <h2
-              style={{
-                fontSize: '22px',
-                fontWeight: 700,
-                color: '#4FC3F7',
-                marginBottom: '6px',
-              }}
-            >
-              🔐 본인 인증
-            </h2>
-            <p
-              style={{ fontSize: '14px', color: '#555', marginBottom: '20px' }}
-            >
-              회원가입을 위해 하나를 선택해주세요.
-            </p>
-
-            <button onClick={handleKakaoAuth} className="auth-btn kakao">
-              <img
-                src="https://upload.wikimedia.org/wikipedia/commons/e/e3/KakaoTalk_logo.svg"
-                alt="kakao"
-                className="auth-icon"
-              />
-              카카오로 계속하기
-            </button>
-
-            <button onClick={handleGoogleAuth} className="auth-btn google">
-              <img
-                src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-                alt="google"
-                className="auth-icon"
-              />
-              Google로 계속하기
-            </button>
-
-            <button onClick={handleEmailAuth} className="auth-btn email">
-              📧 이메일 인증
-            </button>
-          </div>
-        )}
 
         {/* STEP 2: 회원가입 입력 */}
         {verified && (
