@@ -2,8 +2,6 @@
 
 import { useState, useEffect, FormEvent, MouseEvent } from 'react'
 
-const API_KEY = `109e3660c3624bf5a4803631891234ef`
-
 type DayCell = {
   day: number | null
   key: string | null
@@ -255,7 +253,6 @@ export default function CalendarPage() {
   }, [year])
 
   // 🎓 -------- 학사일정 Fetch --------
-  // 🎓 -------- 학사일정 Fetch --------
   useEffect(() => {
     async function loadAcademic() {
       try {
@@ -266,7 +263,7 @@ export default function CalendarPage() {
         const from = `${y}${m}01`
         const to = `${y}${m}31`
 
-        const API_URL = `https://open.neis.go.kr/hub/SchoolSchedule?KEY=${API_KEY}&Type=json&ATPT_OFCDC_SC_CODE=J10&SD_SCHUL_CODE=7531116&AA_FROM_YMD=${from}&AA_TO_YMD=${to}`
+        const API_URL = `https://open.neis.go.kr/hub/SchoolSchedule?KEY=109e3660c3624bf5a4803631891234ef&Type=json&ATPT_OFCDC_SC_CODE=J10&SD_SCHUL_CODE=7531116&AA_FROM_YMD=${from}&AA_TO_YMD=${to}`
 
         const res = await fetch(API_URL)
         if (!res.ok) throw new Error('학사일정 오류')
@@ -275,8 +272,8 @@ export default function CalendarPage() {
         const rows = json.SchoolSchedule?.[1]?.row || []
 
         // 📌 달력 key(YYYY-MM-DD)로 변환 필수!
-        const mapped = rows.map((item: any) => {
-          const ymd = item.AA_YMD // "20250304"
+        const mapped: AcademicEvent[] = rows.map((item: any): AcademicEvent => {
+          const ymd = item.AA_YMD
           const yyyy = ymd.slice(0, 4)
           const mm = ymd.slice(4, 6)
           const dd = ymd.slice(6, 8)
@@ -289,7 +286,7 @@ export default function CalendarPage() {
 
         // 날짜별 그룹화
         const map: Record<string, AcademicEvent[]> = {}
-        mapped.forEach((ev: AcademicEvent) => {
+        mapped.forEach((ev) => {
           if (!map[ev.date]) map[ev.date] = []
           map[ev.date].push(ev)
         })
@@ -967,6 +964,31 @@ export default function CalendarPage() {
                 />
               </div>
 
+              {/* 🎓 이 날짜의 학사일정 표시 (읽기 전용) */}
+              {(modalStartDate || selectedDate) &&
+                (() => {
+                  const dateKey = modalStartDate || selectedDate || ''
+                  if (!dateKey) return null
+                  const list = academicEvents[dateKey] || []
+                  if (!list.length) return null
+
+                  return (
+                    <div className="modal-field">
+                      <label className="modal-label">
+                        학사일정 (조회 전용)
+                      </label>
+                      <div className="academic-list">
+                        {list.map((ev, idx) => (
+                          <div key={idx} className="academic-item">
+                            <span className="academic-dot">●</span>
+                            <span className="academic-title">{ev.title}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })()}
+
               {/* 기존 일정 리스트 */}
               {selectedDate &&
                 (() => {
@@ -1270,7 +1292,7 @@ export default function CalendarPage() {
           border-radius: 999px;
         }
 
-        /* 📌 학사일정 스타일 */
+        /* 📌 학사일정 스타일 (캘린더 셀) */
         .academic-tag {
           margin-top: 2px;
           font-size: 9px;
@@ -1571,6 +1593,41 @@ export default function CalendarPage() {
 
         .modal-delete-btn:hover {
           background: #fecaca;
+        }
+
+        /* 🎓 모달 내 학사일정 리스트 */
+        .academic-list {
+          border-radius: 8px;
+          border: 1px solid #dbeafe;
+          padding: 6px 8px;
+          background: #eff6ff;
+          max-height: 120px;
+          overflow-y: auto;
+        }
+
+        .academic-item {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 2px 0;
+          font-size: 12px;
+          color: #1d4ed8;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .academic-dot {
+          font-size: 10px;
+          color: #1d4ed8;
+        }
+
+        .academic-title {
+          flex: 1;
+          min-width: 0;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         @media (max-width: 768px) {
