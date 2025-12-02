@@ -32,6 +32,8 @@ export default function HomePage() {
   const [today, setToday] = useState<string>('')
   const [calendar, setCalendar] = useState<HomeCalendarItem[]>([])
 
+  const [showRecommend, setShowRecommend] = useState(false)
+
   useEffect(() => {
     // 로그인 유저
     setUser(localStorage.getItem('loggedInUser') || null)
@@ -234,6 +236,33 @@ export default function HomePage() {
       <section style={{ marginBottom: '26px' }}>
         <Footer />
       </section>
+
+      {/* 🔵 오늘의 추천 도서 버튼 */}
+      <section style={{ marginBottom: '16px', textAlign: 'left' }}>
+        <button
+          onClick={() => setShowRecommend(!showRecommend)}
+          style={{
+            padding: '10px 18px',
+            background: '#4FC3F7',
+            color: 'white',
+            borderRadius: '10px',
+            fontWeight: 600,
+            border: 'none',
+            cursor: 'pointer',
+            fontSize: '14px',
+            boxShadow: '0 2px 5px rgba(0,0,0,0.15)',
+          }}
+        >
+          {showRecommend ? '추천 도서 접기' : '오늘의 추천 도서 보기'}
+        </button>
+      </section>
+
+      {/* 🔵 오늘의 추천 도서 섹션 (토글) */}
+      {showRecommend && (
+        <section style={{ marginBottom: '26px' }}>
+          <LibraryRecommend />
+        </section>
+      )}
 
       {/* ------------------ 오늘 일정 (3개 초과 시 + 외 N개) ------------------ */}
       <section style={{ marginBottom: '26px' }}>
