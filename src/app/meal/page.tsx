@@ -33,8 +33,6 @@ const SCHOOL_DATA: Record<string, { edu: string; code: string }> = {
 //  급식 API 불러오기 함수 (단일 날짜 조회)
 // ---------------------------
 async function fetchMeal(date: string, eduCode: string, schoolCode: string) {
-  const KEY = process.env.NEXT_PUBLIC_NEIS_KEY
-
   const url = `https://open.neis.go.kr/hub/mealServiceDietInfo?KEY=109e3660c3624bf5a4803631891234ef&Type=json&ATPT_OFCDC_SC_CODE=J10&SD_SCHUL_CODE=7531116&MLSV_YMD=${date}`
 
   try {
@@ -43,10 +41,25 @@ async function fetchMeal(date: string, eduCode: string, schoolCode: string) {
 
     if (!data.mealServiceDietInfo) return null
 
-    return data.mealServiceDietInfo[1].row[0].DDISH_NM.replace(
-      /<br\/>/g,
-      '\n'
-    ).split('\n')
+    const raw = data.mealServiceDietInfo[1].row[0].DDISH_NM as string
+
+    // 1) 먼저 <br/> 기준으로 줄 나누기
+    const lines = raw.split('<br/>')
+
+    // 2) 각 줄에서 번호 / 괄호 제거 + 정리
+    const cleanedLines = lines
+      .map((line) =>
+        line
+          .replace(/[①-⑳]/g, '')          // ①~⑳ 제거 (혹시 있을 경우)
+          .replace(/\(\s?[0-9.]+\s?\)/g, '') // (1.2.6.13) 같은 알레르기 번호 제거
+          .replace(/-\s*$/g, '')            // 라인 끝의 '-' 제거 (잡곡밥- → 잡곡밥)
+          .replace(/\s+/g, ' ')             // 중복 공백 정리
+          .trim()
+      )
+      .filter((line) => line.length > 0)    // 빈 줄 제거
+
+    // 🔙 UI에서는 string[] 으로 사용
+    return cleanedLines
   } catch {
     return null
   }
