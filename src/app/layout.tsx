@@ -97,6 +97,31 @@ export default function RootLayout({
 
   return (
     <html lang="ko">
+          <head>
+        {/* Google Fonts */}
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
+
+        {/* Google Icons */}
+        <link
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:FILL@0;1&display=swap"
+          rel="stylesheet"
+        />
+
+        <style>{`
+        .material-symbols-rounded {
+          font-family: 'Material Symbols Rounded';
+          font-weight: normal;
+          font-style: normal;
+          font-size: 24px;
+          display: inline-block;
+          line-height: 1;
+          white-space: nowrap;
+        }
+      `}</style>
+      </head>
       <body
         style={{
           margin: 0,
