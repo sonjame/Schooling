@@ -1,29 +1,29 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import Head from 'next/head';
+import { useEffect, useState } from 'react'
+import Head from 'next/head'
 
 export default function LibraryRecommend() {
-  const [books, setBooks] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
+  const [books, setBooks] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
 
-  const PAGES = Array.from({ length: 10 }, (_, i) => i + 1); // 🔵 1~10페이지 정도 제공
+  const PAGES = Array.from({ length: 10 }, (_, i) => i + 1)
 
   const loadBooks = () => {
-    setLoading(true);
+    setLoading(true)
 
     fetch(`/api/aladin/recommend?page=${page}`)
       .then((res) => res.json())
       .then((data) => {
-        setBooks(data.item || []);
-        setLoading(false);
-      });
-  };
+        setBooks(data.item || [])
+        setLoading(false)
+      })
+  }
 
   useEffect(() => {
-    loadBooks();
-  }, [page]);
+    loadBooks()
+  }, [page])
 
   return (
     <>
@@ -40,7 +40,9 @@ export default function LibraryRecommend() {
 
       <div className="container">
         <h2 className="section-title">
-          <span className="material-symbols-rounded title-icon">auto_stories</span>
+          <span className="material-symbols-rounded title-icon">
+            auto_stories
+          </span>
           오늘의 추천도서
         </h2>
 
@@ -50,14 +52,22 @@ export default function LibraryRecommend() {
           {!loading && books.length > 0 && (
             <div className="book-list">
               {books.map((book: any, i) => (
-                <div key={book.isbn}>
+                <a
+                  key={book.isbn}
+                  href={book.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ textDecoration: 'none', color: 'inherit' }}
+                >
                   <div className="book-card">
                     <img src={book.cover} className="book-cover" />
 
                     <div className="book-info">
                       <div>
                         <h3 className="book-title">
-                          {book.title.length > 55 ? book.title.slice(0, 55) + '…' : book.title}
+                          {book.title.length > 55
+                            ? book.title.slice(0, 55) + '…'
+                            : book.title}
                         </h3>
                         <p className="book-author">{book.author}</p>
                       </div>
@@ -67,7 +77,7 @@ export default function LibraryRecommend() {
                   </div>
 
                   {i !== books.length - 1 && <hr className="divider" />}
-                </div>
+                </a>
               ))}
             </div>
           )}
@@ -76,7 +86,7 @@ export default function LibraryRecommend() {
             <p className="no-data">추천 도서를 불러오지 못했습니다.</p>
           )}
 
-          {/* 🔵 페이지네이션 */}
+          {/* 페이지네이션 */}
           <div className="pagination">
             {PAGES.map((num) => (
               <button
@@ -228,5 +238,5 @@ export default function LibraryRecommend() {
         }
       `}</style>
     </>
-  );
+  )
 }
