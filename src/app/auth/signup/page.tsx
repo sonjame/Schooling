@@ -309,7 +309,7 @@ export default function SignupPage() {
                   취소
                 </button>
                 <button className="ok-btn" onClick={handleFinalSubmit}>
-                  네, 맞아요
+                  확인
                 </button>
               </div>
             </div>
