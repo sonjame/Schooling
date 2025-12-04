@@ -358,37 +358,37 @@ export default function SignupPage() {
         }
 
         .confirm-buttons {
-  display: flex;
-  gap: 16px;        /* 버튼 사이 여유 증가 */
-  margin-top: 18px;
-  width: 100%;
-  justify-content: space-between;
-}
+        display: flex;
+        gap: 16px;        /* 버튼 사이 여유 증가 */
+        margin-top: 18px;
+        width: 100%;
+        justify-content: space-between;
+        }
 
-.cancel-btn,
-.ok-btn {
-  flex: 1;
-  height: 52px;      /* 버튼 높이 증가 */
-  padding: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  border-radius: 12px; /* 버튼 더 둥글게 */
-  font-size: 16px;     /* 글씨 약간 크게 */
-  font-weight: 700;
-  cursor: pointer;
-  border: none;
-}
+        .cancel-btn,
+        .ok-btn {
+        flex: 1;
+        height: 52px;      /* 버튼 높이 증가 */
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 12px; /* 버튼 더 둥글게 */
+        font-size: 16px;     /* 글씨 약간 크게 */
+        font-weight: 700;
+        cursor: pointer;
+        border: none;
+        }
 
-.cancel-btn {
-  background: #e2e2e2;
-  color: #333;
-}
+        .cancel-btn {
+        background: #e2e2e2;
+        color: #333;
+        }
 
-.ok-btn {
-  background: #4fc3f7;
-  color: white;
-}
+        .ok-btn {
+        background: #4fc3f7;
+        color: white;
+        }
 
       `}</style>
     </>
