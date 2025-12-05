@@ -3,6 +3,7 @@
 import { useSearchParams } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import type React from 'react'
 
 const API_KEY = '32cbd596f1b64e7abc94e1eb85ca5a06'
 
@@ -71,7 +72,7 @@ export default function SignupPage() {
     setTimeout(() => setShowModal(false), 1500)
   }
 
-  // 인증
+  // 인증 버튼 (아직 안 쓰더라도 남겨둠)
   const handleKakaoAuth = () => (window.location.href = '/api/auth/kakao')
   const handleGoogleAuth = () => (window.location.href = '/api/auth/google')
   const handleEmailAuth = () => (window.location.href = '/auth/email')
@@ -200,7 +201,20 @@ export default function SignupPage() {
   }
 
   return (
-        {/* STEP 2: 회원가입 입력 */}
+    <>
+      {/* 전체 래퍼 */}
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          background: '#F3F6FA',
+          padding: 20,
+          boxSizing: 'border-box',
+        }}
+      >
+        {/* STEP 2: 회원가입 입력 (verified 되었을 때만 보이게) */}
         {verified && (
           <div style={cardStyle}>
             <h2
@@ -420,17 +434,17 @@ export default function SignupPage() {
             )}
           </div>
         )}
-
-        {/* 알림 모달 */}
-        {showModal && (
-          <div className="modal-backdrop">
-            <div className="modal-box">
-              <div className="modal-icon">✔</div>
-              <p>{modalMessage}</p>
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* 알림 모달 */}
+      {showModal && (
+        <div className="modal-backdrop">
+          <div className="modal-box">
+            <div className="modal-icon">✔</div>
+            <p>{modalMessage}</p>
+          </div>
+        </div>
+      )}
 
       {/* 일부 스타일 유지 */}
       <style jsx>{`
@@ -485,6 +499,7 @@ export default function SignupPage() {
           display: flex;
           justify-content: center;
           align-items: center;
+          z-index: 9999;
         }
 
         .modal-box,
