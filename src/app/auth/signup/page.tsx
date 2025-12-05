@@ -1,11 +1,9 @@
-'use client'
+"use client"
 
 import { useSearchParams } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import type React from 'react'
-import { Suspense } from 'react'
-
 
 const API_KEY = '32cbd596f1b64e7abc94e1eb85ca5a06'
 
@@ -34,10 +32,9 @@ export default function SignupPage() {
   const [showModal, setShowModal] = useState(false)
   const [modalMessage, setModalMessage] = useState('')
 
-  // ⭐ 아이디 중복체크 관련
   const [idAvailable, setIdAvailable] = useState<boolean | null>(null)
 
-  // 소셜 정보 로드
+  /* ⭐ 소셜 계정 데이터 → LocalStorage 저장 */
   useEffect(() => {
     const socialName = searchParams.get('name')
     const socialEmail = searchParams.get('email')
@@ -55,31 +52,25 @@ export default function SignupPage() {
     }
   }, [searchParams])
 
-  // 기존 유저 불러오기
+  /* 기존 유저 불러오기 */
   useEffect(() => {
     const saved = JSON.parse(localStorage.getItem('users') || '[]')
     setUsers(saved)
   }, [])
 
-  // 인증 여부 확인
+  /* 인증 체크 */
   useEffect(() => {
-    const v = searchParams.get('verified')
-    setVerified(v === '1')
+    setVerified(searchParams.get('verified') === '1')
   }, [searchParams])
 
-  // 공통 alert
+  /*_modal alert */
   const showAlert = (msg: string) => {
     setModalMessage(msg)
     setShowModal(true)
     setTimeout(() => setShowModal(false), 1500)
   }
 
-  // 인증 버튼 (아직 안 쓰더라도 남겨둠)
-  const handleKakaoAuth = () => (window.location.href = '/api/auth/kakao')
-  const handleGoogleAuth = () => (window.location.href = '/api/auth/google')
-  const handleEmailAuth = () => (window.location.href = '/auth/email')
-
-  // ⭐ 학교 검색
+  /* ⭐ 학교 검색 */
   const searchSchool = async (keyword: string) => {
     setSchool(keyword)
     setIsSearching(true)
@@ -115,7 +106,7 @@ export default function SignupPage() {
     setIsSearching(false)
   }
 
-  // ⭐ 아이디 중복확인
+  /* 아이디 중복 체크 */
   const checkDuplicateId = () => {
     if (!username.trim()) {
       showAlert('아이디를 입력해주세요.')
@@ -133,14 +124,13 @@ export default function SignupPage() {
     }
   }
 
-  // 제출 전 체크
+  /* 제출 전 검증 */
   const handleSubmit = () => {
     if (!realName || !username || !password || !password2 || !school) {
       showAlert('모든 정보를 입력해주세요.')
       return
     }
 
-    // ⭐ 아이디 중복확인 여부 체크
     if (idAvailable === false) {
       showAlert('이미 사용 중인 아이디입니다.')
       return
@@ -183,7 +173,7 @@ export default function SignupPage() {
     setTimeout(() => (window.location.href = '/auth/login'), 1500)
   }
 
-  // 스타일
+  /* 스타일 */
   const cardStyle: React.CSSProperties = {
     width: '420px',
     background: 'white',
@@ -203,7 +193,6 @@ export default function SignupPage() {
   }
 
   return (
-    <Suspense fallback={<div>Loading...</div>}>
     <>
       {/* 전체 래퍼 */}
       <div
@@ -217,7 +206,6 @@ export default function SignupPage() {
           boxSizing: 'border-box',
         }}
       >
-        {/* STEP 2: 회원가입 입력 (verified 되었을 때만 보이게) */}
         {verified && (
           <div style={cardStyle}>
             <h2
@@ -232,7 +220,6 @@ export default function SignupPage() {
               📝 회원가입
             </h2>
 
-            {/* 실명 */}
             <input
               style={inputStyle}
               placeholder="이름을 입력하세요 (실명)"
@@ -240,7 +227,7 @@ export default function SignupPage() {
               onChange={(e) => setRealName(e.target.value)}
             />
 
-            {/* 아이디 + 중복확인 버튼 */}
+            {/* 아이디 입력 */}
             <div style={{ position: 'relative', marginTop: '12px' }}>
               <input
                 style={{ ...inputStyle, paddingRight: '100px' }}
@@ -262,7 +249,7 @@ export default function SignupPage() {
                   padding: '8px 10px',
                   background: '#4FC3F7',
                   color: 'white',
-                  borderRadius: '6px',
+                  borderRadius: 6,
                   border: 'none',
                   cursor: 'pointer',
                   fontSize: '13px',
@@ -273,21 +260,20 @@ export default function SignupPage() {
               </button>
             </div>
 
-            {/* 중복확인 결과 */}
             {idAvailable === true && (
-              <p style={{ color: '#2E7D32', fontSize: '13px', marginTop: '6px' }}>
+              <p style={{ color: '#2E7D32', fontSize: '13px', marginTop: 6 }}>
                 ✅ 사용 가능한 아이디입니다.
               </p>
             )}
 
             {idAvailable === false && (
-              <p style={{ color: '#D32F2F', fontSize: '13px', marginTop: '6px' }}>
+              <p style={{ color: '#D32F2F', fontSize: '13px', marginTop: 6 }}>
                 ❌ 이미 사용 중인 아이디입니다.
               </p>
             )}
 
             {/* 비밀번호 */}
-            <div style={{ position: 'relative', marginTop: '12px' }}>
+            <div style={{ position: 'relative', marginTop: 12 }}>
               <input
                 type={showPassword ? 'text' : 'password'}
                 placeholder="비밀번호를 입력하세요"
@@ -318,7 +304,7 @@ export default function SignupPage() {
             />
 
             {/* 학교 검색 */}
-            <div style={{ position: 'relative', marginTop: '12px' }}>
+            <div style={{ position: 'relative', marginTop: 12 }}>
               <input
                 style={inputStyle}
                 placeholder="학교명을 입력하세요 (자동완성)"
@@ -354,10 +340,10 @@ export default function SignupPage() {
                       }}
                     >
                       <strong>{item.SCHUL_NM}</strong>
-                      <span style={{ color: '#777', marginLeft: '6px' }}>
+                      <span style={{ color: '#777', marginLeft: 6 }}>
                         ({item.LCTN_SC_NM})
                       </span>
-                      <span style={{ color: '#4FC3F7', marginLeft: '6px' }}>
+                      <span style={{ color: '#4FC3F7', marginLeft: 6 }}>
                         / {item.SCHUL_KND_SC_NM}
                       </span>
                     </li>
@@ -367,7 +353,7 @@ export default function SignupPage() {
             </div>
 
             <select
-              style={{ ...inputStyle, marginTop: '12px' }}
+              style={{ ...inputStyle, marginTop: 12 }}
               value={grade}
               onChange={(e) => setGrade(e.target.value)}
             >
@@ -376,7 +362,7 @@ export default function SignupPage() {
               <option>3학년</option>
             </select>
 
-            <p style={{ fontSize: '13px', color: '#d32f2f', marginTop: '6px' }}>
+            <p style={{ fontSize: 13, color: '#d32f2f', marginTop: 6 }}>
               ⚠️ 한번 선택한 학년은 변경할 수 없습니다.
             </p>
 
@@ -385,33 +371,23 @@ export default function SignupPage() {
               style={{
                 width: '100%',
                 background: '#4FC3F7',
-                padding: '12px',
-                borderRadius: '8px',
+                padding: 12,
+                borderRadius: 8,
                 border: 'none',
                 color: 'white',
-                fontSize: '16px',
+                fontSize: 16,
                 fontWeight: 600,
                 cursor: 'pointer',
-                marginTop: '20px',
+                marginTop: 20,
               }}
             >
               회원가입 완료
             </button>
 
-            <p
-              style={{
-                textAlign: 'center',
-                marginTop: '20px',
-                fontSize: '14px',
-              }}
-            >
+            <p style={{ textAlign: 'center', marginTop: 20, fontSize: 14 }}>
               이미 계정이 있으신가요?
-              <Link
-                href="/auth/login"
-                style={{ color: '#4FC3F7', fontWeight: 600 }}
-              >
-                {' '}
-                로그인
+              <Link href="/auth/login" style={{ color: '#4FC3F7', fontWeight: 600 }}>
+                {' '}로그인
               </Link>
             </p>
 
@@ -422,10 +398,7 @@ export default function SignupPage() {
                   <div className="confirm-icon">❗</div>
                   <p className="confirm-text">{grade} 이 맞습니까?</p>
                   <div className="confirm-buttons">
-                    <button
-                      className="cancel-btn"
-                      onClick={() => setShowConfirm(false)}
-                    >
+                    <button className="cancel-btn" onClick={() => setShowConfirm(false)}>
                       취소
                     </button>
                     <button className="ok-btn" onClick={handleFinalSubmit}>
@@ -449,47 +422,8 @@ export default function SignupPage() {
         </div>
       )}
 
-      {/* 일부 스타일 유지 */}
+      {/* 스타일 유지 */}
       <style jsx>{`
-        .auth-btn {
-          width: 100%;
-          height: 48px;
-          padding: 0 14px;
-          display: flex;
-          align-items: center;
-          border-radius: 10px;
-          font-size: 15px;
-          font-weight: 600;
-          cursor: pointer;
-          border: none;
-          margin-bottom: 12px;
-          justify-content: flex-start;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .auth-icon {
-          width: 22px;
-          height: 22px;
-          margin-right: 12px;
-        }
-
-        .google {
-          background: #ffffff;
-          border: 1px solid #ddd;
-          color: #444;
-        }
-
-        .kakao {
-          background: #fee500;
-          color: #3c1e1e;
-        }
-
-        .email {
-          background: #e3f2fd;
-          border: 1px solid #90caf9;
-          color: #1976d2;
-        }
-
         .modal-backdrop,
         .confirm-backdrop {
           position: fixed;
@@ -524,7 +458,6 @@ export default function SignupPage() {
         .ok-btn {
           flex: 1;
           height: 42px;
-          padding: 0;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -545,7 +478,6 @@ export default function SignupPage() {
           color: white;
         }
       `}</style>
-      </>
-    </Suspense>
+    </>
   )
 }
