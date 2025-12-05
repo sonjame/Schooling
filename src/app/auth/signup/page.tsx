@@ -1,13 +1,17 @@
 'use client'
 
+import { useSearchParams } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 
 const API_KEY = '32cbd596f1b64e7abc94e1eb85ca5a06'
 
 export default function SignupPage() {
+  const searchParams = useSearchParams()
 
-  // 입력 값
+  // ⭐ 입력 값
+  const [verified, setVerified] = useState(false)
+
   const [realName, setRealName] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -27,7 +31,9 @@ export default function SignupPage() {
   const [showModal, setShowModal] = useState(false)
   const [modalMessage, setModalMessage] = useState('')
 
+  // ⭐ 아이디 중복체크 관련
   const [idAvailable, setIdAvailable] = useState<boolean | null>(null)
+
 
   // 기존 유저 불러오기
   useEffect(() => {
