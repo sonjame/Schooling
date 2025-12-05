@@ -1,17 +1,13 @@
 'use client'
 
-import { useSearchParams } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 
 const API_KEY = '32cbd596f1b64e7abc94e1eb85ca5a06'
 
 export default function SignupPage() {
-  const searchParams = useSearchParams()
 
-  // ⭐ 입력 값
-  const [verified, setVerified] = useState(false)
-
+  // 입력 값
   const [realName, setRealName] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -31,26 +27,7 @@ export default function SignupPage() {
   const [showModal, setShowModal] = useState(false)
   const [modalMessage, setModalMessage] = useState('')
 
-  // ⭐ 아이디 중복체크 관련
   const [idAvailable, setIdAvailable] = useState<boolean | null>(null)
-
-  // 소셜 정보 로드
-  useEffect(() => {
-    const socialName = searchParams.get('name')
-    const socialEmail = searchParams.get('email')
-    const socialId = searchParams.get('id')
-
-    if (socialName && socialEmail && socialId) {
-      localStorage.setItem(
-        'socialUser',
-        JSON.stringify({
-          id: socialId,
-          name: socialName,
-          email: socialEmail,
-        })
-      )
-    }
-  }, [searchParams])
 
   // 기존 유저 불러오기
   useEffect(() => {
@@ -58,25 +35,14 @@ export default function SignupPage() {
     setUsers(saved)
   }, [])
 
-  // 인증 여부 확인
-  useEffect(() => {
-    const v = searchParams.get('verified')
-    setVerified(v === '1')
-  }, [searchParams])
-
-  // 공통 alert
+  // alert
   const showAlert = (msg: string) => {
     setModalMessage(msg)
     setShowModal(true)
     setTimeout(() => setShowModal(false), 1500)
   }
 
-  // 인증
-  const handleKakaoAuth = () => (window.location.href = '/api/auth/kakao')
-  const handleGoogleAuth = () => (window.location.href = '/api/auth/google')
-  const handleEmailAuth = () => (window.location.href = '/auth/email')
-
-  // ⭐ 학교 검색
+  // 학교 검색
   const searchSchool = async (keyword: string) => {
     setSchool(keyword)
     setIsSearching(true)
@@ -87,9 +53,7 @@ export default function SignupPage() {
     }
 
     try {
-      const url = `https://open.neis.go.kr/hub/schoolInfo?KEY=${API_KEY}&Type=json&pIndex=1&pSize=20&SCHUL_NM=${encodeURIComponent(
-        keyword
-      )}`
+      const url = `https://open.neis.go.kr/hub/schoolInfo?KEY=${API_KEY}&Type=json&pIndex=1&pSize=20&SCHUL_NM=${encodeURIComponent(keyword)}`
       const res = await fetch(url)
       const data = await res.json()
 
@@ -112,7 +76,7 @@ export default function SignupPage() {
     setIsSearching(false)
   }
 
-  // ⭐ 아이디 중복확인
+  // 아이디 중복확인
   const checkDuplicateId = () => {
     if (!username.trim()) {
       showAlert('아이디를 입력해주세요.')
@@ -137,7 +101,6 @@ export default function SignupPage() {
       return
     }
 
-    // ⭐ 아이디 중복확인 여부 체크
     if (idAvailable === false) {
       showAlert('이미 사용 중인 아이디입니다.')
       return
@@ -157,14 +120,10 @@ export default function SignupPage() {
   }
 
   const handleFinalSubmit = () => {
-    const social = JSON.parse(localStorage.getItem('socialUser') || '{}')
-
     const newUser = {
       username,
       password,
       name: realName,
-      email: social.email || '',
-      social_id: social.id || null,
       school,
       schoolCode,
       eduCode,
@@ -175,11 +134,6 @@ export default function SignupPage() {
 
     const updated = [...users, newUser]
     localStorage.setItem('users', JSON.stringify(updated))
-
-    // 🔥 급식 / 학사일정에서 사용할 데이터 저장
-    localStorage.setItem('userSchool', school)
-    localStorage.setItem('eduCode', eduCode)
-    localStorage.setItem('schoolCode', schoolCode)
 
     showAlert('회원가입 완료!')
     setTimeout(() => (window.location.href = '/auth/login'), 1500)
@@ -216,273 +170,221 @@ export default function SignupPage() {
           padding: '20px',
         }}
       >
-        {/* STEP 1: 인증 */}
-        {!verified && (
-          <div style={cardStyle}>
-            <h2
-              style={{
-                fontSize: '22px',
-                fontWeight: 700,
-                color: '#4FC3F7',
-                marginBottom: '6px',
-              }}
-            >
-              🔐 본인 인증
-            </h2>
-            <p
-              style={{ fontSize: '14px', color: '#555', marginBottom: '20px' }}
-            >
-              회원가입을 위해 하나를 선택해주세요.
-            </p>
 
-            <button onClick={handleKakaoAuth} className="auth-btn kakao">
-              <img
-                src="https://upload.wikimedia.org/wikipedia/commons/e/e3/KakaoTalk_logo.svg"
-                alt="kakao"
-                className="auth-icon"
-              />
-              카카오로 계속하기
-            </button>
+        <div style={cardStyle}>
+          <h2
+            style={{
+              fontSize: '22px',
+              fontWeight: 700,
+              color: '#4FC3F7',
+              textAlign: 'center',
+              marginBottom: '10px',
+            }}
+          >
+            📝 회원가입
+          </h2>
 
-            <button onClick={handleGoogleAuth} className="auth-btn google">
-              <img
-                src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-                alt="google"
-                className="auth-icon"
-              />
-              Google로 계속하기
-            </button>
+          {/* 실명 */}
+          <input
+            style={inputStyle}
+            placeholder="이름을 입력하세요 (실명)"
+            value={realName}
+            onChange={(e) => setRealName(e.target.value)}
+          />
 
-            <button onClick={handleEmailAuth} className="auth-btn email">
-              📧 이메일 인증
-            </button>
-          </div>
-        )}
-
-        {/* STEP 2: 회원가입 입력 */}
-        {verified && (
-          <div style={cardStyle}>
-            <h2
-              style={{
-                fontSize: '22px',
-                fontWeight: 700,
-                color: '#4FC3F7',
-                textAlign: 'center',
-                marginBottom: '10px',
-              }}
-            >
-              📝 회원가입
-            </h2>
-
-            {/* 실명 */}
+          {/* 아이디 */}
+          <div style={{ position: 'relative', marginTop: '12px' }}>
             <input
-              style={inputStyle}
-              placeholder="이름을 입력하세요 (실명)"
-              value={realName}
-              onChange={(e) => setRealName(e.target.value)}
+              style={{ ...inputStyle, paddingRight: '100px' }}
+              placeholder="아이디를 입력하세요"
+              value={username}
+              onChange={(e) => {
+                setUsername(e.target.value)
+                setIdAvailable(null)
+              }}
             />
-
-            {/* 아이디 + 중복확인 버튼 */}
-            <div style={{ position: 'relative', marginTop: '12px' }}>
-              <input
-                style={{ ...inputStyle, paddingRight: '100px' }}
-                placeholder="아이디를 입력하세요"
-                value={username}
-                onChange={(e) => {
-                  setUsername(e.target.value)
-                  setIdAvailable(null)
-                }}
-              />
-
-              <button
-                onClick={checkDuplicateId}
-                style={{
-                  position: 'absolute',
-                  right: '8px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  padding: '8px 10px',
-                  background: '#4FC3F7',
-                  color: 'white',
-                  borderRadius: '6px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                }}
-              >
-                중복확인
-              </button>
-            </div>
-
-            {/* 중복확인 결과 */}
-            {idAvailable === true && (
-              <p
-                style={{ color: '#2E7D32', fontSize: '13px', marginTop: '6px' }}
-              >
-                ✅ 사용 가능한 아이디입니다.
-              </p>
-            )}
-
-            {idAvailable === false && (
-              <p
-                style={{ color: '#D32F2F', fontSize: '13px', marginTop: '6px' }}
-              >
-                ❌ 이미 사용 중인 아이디입니다.
-              </p>
-            )}
-
-            {/* 비밀번호 */}
-            <div style={{ position: 'relative', marginTop: '12px' }}>
-              <input
-                type={showPassword ? 'text' : 'password'}
-                placeholder="비밀번호를 입력하세요"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                style={{ ...inputStyle, paddingRight: '48px' }}
-              />
-              <span
-                onClick={() => setShowPassword(!showPassword)}
-                style={{
-                  position: 'absolute',
-                  right: '12px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  cursor: 'pointer',
-                }}
-              >
-                {showPassword ? '🙈' : '👁️'}
-              </span>
-            </div>
-
-            <input
-              type="password"
-              placeholder="비밀번호를 다시 입력하세요"
-              value={password2}
-              onChange={(e) => setPassword2(e.target.value)}
-              style={{ ...inputStyle, marginTop: '12px' }}
-            />
-
-            {/* 학교 검색 */}
-            <div style={{ position: 'relative', marginTop: '12px' }}>
-              <input
-                style={inputStyle}
-                placeholder="학교명을 입력하세요 (자동완성)"
-                value={school}
-                onChange={(e) => searchSchool(e.target.value)}
-              />
-
-              {isSearching && searchResults.length > 0 && (
-                <ul
-                  style={{
-                    position: 'absolute',
-                    top: '50px',
-                    width: '100%',
-                    background: 'white',
-                    border: '1px solid #ccc',
-                    borderRadius: '8px',
-                    maxHeight: '180px',
-                    overflowY: 'auto',
-                    listStyle: 'none',
-                    margin: 0,
-                    padding: 0,
-                    zIndex: 100,
-                  }}
-                >
-                  {searchResults.map((item) => (
-                    <li
-                      key={item.SD_SCHUL_CODE}
-                      onClick={() => selectSchool(item)}
-                      style={{
-                        padding: '10px 12px',
-                        cursor: 'pointer',
-                        borderBottom: '1px solid #eee',
-                      }}
-                    >
-                      <strong>{item.SCHUL_NM}</strong>
-                      <span style={{ color: '#777', marginLeft: '6px' }}>
-                        ({item.LCTN_SC_NM})
-                      </span>
-                      <span style={{ color: '#4FC3F7', marginLeft: '6px' }}>
-                        / {item.SCHUL_KND_SC_NM}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            <select
-              style={{ ...inputStyle, marginTop: '12px' }}
-              value={grade}
-              onChange={(e) => setGrade(e.target.value)}
-            >
-              <option>1학년</option>
-              <option>2학년</option>
-              <option>3학년</option>
-            </select>
-
-            <p style={{ fontSize: '13px', color: '#d32f2f', marginTop: '6px' }}>
-              ⚠️ 한번 선택한 학년은 변경할 수 없습니다.
-            </p>
 
             <button
-              onClick={handleSubmit}
+              onClick={checkDuplicateId}
               style={{
-                width: '100%',
+                position: 'absolute',
+                right: '8px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                padding: '8px 10px',
                 background: '#4FC3F7',
-                padding: '12px',
-                borderRadius: '8px',
-                border: 'none',
                 color: 'white',
-                fontSize: '16px',
-                fontWeight: 600,
+                borderRadius: '6px',
+                border: 'none',
                 cursor: 'pointer',
-                marginTop: '20px',
+                fontSize: '13px',
+                fontWeight: 600,
               }}
             >
-              회원가입 완료
+              중복확인
             </button>
+          </div>
 
-            <p
+          {/* 중복확인 결과 */}
+          {idAvailable === true && (
+            <p style={{ color: '#2E7D32', fontSize: '13px', marginTop: '6px' }}>
+              ✅ 사용 가능한 아이디입니다.
+            </p>
+          )}
+
+          {idAvailable === false && (
+            <p style={{ color: '#D32F2F', fontSize: '13px', marginTop: '6px' }}>
+              ❌ 이미 사용 중인 아이디입니다.
+            </p>
+          )}
+
+          {/* 비밀번호 */}
+          <div style={{ position: 'relative', marginTop: '12px' }}>
+            <input
+              type={showPassword ? 'text' : 'password'}
+              placeholder="비밀번호를 입력하세요"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              style={{ ...inputStyle, paddingRight: '48px' }}
+            />
+            <span
+              onClick={() => setShowPassword(!showPassword)}
               style={{
-                textAlign: 'center',
-                marginTop: '20px',
-                fontSize: '14px',
+                position: 'absolute',
+                right: '12px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                cursor: 'pointer',
               }}
             >
-              이미 계정이 있으신가요?
-              <Link
-                href="/auth/login"
-                style={{ color: '#4FC3F7', fontWeight: 600 }}
-              >
-                {' '}
-                로그인
-              </Link>
-            </p>
+              {showPassword ? '🙈' : '👁️'}
+            </span>
+          </div>
 
-            {/* 학년 확인 모달 */}
-            {showConfirm && (
-              <div className="confirm-backdrop">
-                <div className="confirm-box">
-                  <div className="confirm-icon">❗</div>
-                  <p className="confirm-text">{grade} 이 맞습니까?</p>
-                  <div className="confirm-buttons">
-                    <button
-                      className="cancel-btn"
-                      onClick={() => setShowConfirm(false)}
-                    >
-                      취소
-                    </button>
-                    <button className="ok-btn" onClick={handleFinalSubmit}>
-                      확인
-                    </button>
-                  </div>
-                </div>
-              </div>
+          <input
+            type="password"
+            placeholder="비밀번호를 다시 입력하세요"
+            value={password2}
+            onChange={(e) => setPassword2(e.target.value)}
+            style={{ ...inputStyle, marginTop: '12px' }}
+          />
+
+          {/* 학교 검색 */}
+          <div style={{ position: 'relative', marginTop: '12px' }}>
+            <input
+              style={inputStyle}
+              placeholder="학교명을 입력하세요 (자동완성)"
+              value={school}
+              onChange={(e) => searchSchool(e.target.value)}
+            />
+
+            {isSearching && searchResults.length > 0 && (
+              <ul
+                style={{
+                  position: 'absolute',
+                  top: '50px',
+                  width: '100%',
+                  background: 'white',
+                  border: '1px solid #ccc',
+                  borderRadius: '8px',
+                  maxHeight: '180px',
+                  overflowY: 'auto',
+                  listStyle: 'none',
+                  margin: 0,
+                  padding: 0,
+                  zIndex: 100,
+                }}
+              >
+                {searchResults.map((item) => (
+                  <li
+                    key={item.SD_SCHUL_CODE}
+                    onClick={() => selectSchool(item)}
+                    style={{
+                      padding: '10px 12px',
+                      cursor: 'pointer',
+                      borderBottom: '1px solid #eee',
+                    }}
+                  >
+                    <strong>{item.SCHUL_NM}</strong>
+                    <span style={{ color: '#777', marginLeft: '6px' }}>
+                      ({item.LCTN_SC_NM})
+                    </span>
+                    <span style={{ color: '#4FC3F7', marginLeft: '6px' }}>
+                      / {item.SCHUL_KND_SC_NM}
+                    </span>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
-        )}
+
+          <select
+            style={{ ...inputStyle, marginTop: '12px' }}
+            value={grade}
+            onChange={(e) => setGrade(e.target.value)}
+          >
+            <option>1학년</option>
+            <option>2학년</option>
+            <option>3학년</option>
+          </select>
+
+          <p style={{ fontSize: '13px', color: '#d32f2f', marginTop: '6px' }}>
+            ⚠️ 한번 선택한 학년은 변경할 수 없습니다.
+          </p>
+
+          <button
+            onClick={handleSubmit}
+            style={{
+              width: '100%',
+              background: '#4FC3F7',
+              padding: '12px',
+              borderRadius: '8px',
+              border: 'none',
+              color: 'white',
+              fontSize: '16px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              marginTop: '20px',
+            }}
+          >
+            회원가입 완료
+          </button>
+
+          <p
+            style={{
+              textAlign: 'center',
+              marginTop: '20px',
+              fontSize: '14px',
+            }}
+          >
+            이미 계정이 있으신가요?
+            <Link href="/auth/login" style={{ color: '#4FC3F7', fontWeight: 600 }}>
+              {' '}
+              로그인
+            </Link>
+          </p>
+
+          {/* 학년 확인 모달 */}
+          {showConfirm && (
+            <div className="confirm-backdrop">
+              <div className="confirm-box">
+                <div className="confirm-icon">❗</div>
+                <p className="confirm-text">{grade} 이 맞습니까?</p>
+                <div className="confirm-buttons">
+                  <button
+                    className="cancel-btn"
+                    onClick={() => setShowConfirm(false)}
+                  >
+                    취소
+                  </button>
+                  <button className="ok-btn" onClick={handleFinalSubmit}>
+                    확인
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* 알림 모달 */}
         {showModal && (
@@ -493,47 +395,19 @@ export default function SignupPage() {
             </div>
           </div>
         )}
+
       </div>
 
-      {/* 일부 스타일 유지 */}
       <style jsx>{`
         .auth-btn {
           width: 100%;
           height: 48px;
-          padding: 0 14px;
           display: flex;
           align-items: center;
           border-radius: 10px;
-          font-size: 15px;
           font-weight: 600;
           cursor: pointer;
-          border: none;
           margin-bottom: 12px;
-          justify-content: flex-start;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .auth-icon {
-          width: 22px;
-          height: 22px;
-          margin-right: 12px;
-        }
-
-        .google {
-          background: #ffffff;
-          border: 1px solid #ddd;
-          color: #444;
-        }
-
-        .kakao {
-          background: #fee500;
-          color: #3c1e1e;
-        }
-
-        .email {
-          background: #e3f2fd;
-          border: 1px solid #90caf9;
-          color: #1976d2;
         }
 
         .modal-backdrop,
@@ -544,7 +418,6 @@ export default function SignupPage() {
           width: 100%;
           height: 100%;
           background: rgba(0, 0, 0, 0.35);
-          backdrop-filter: blur(3px);
           display: flex;
           justify-content: center;
           align-items: center;
@@ -569,12 +442,7 @@ export default function SignupPage() {
         .ok-btn {
           flex: 1;
           height: 42px;
-          padding: 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
           border-radius: 10px;
-          font-size: 15px;
           font-weight: 600;
           cursor: pointer;
           border: none;
