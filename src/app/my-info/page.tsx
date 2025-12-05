@@ -444,6 +444,7 @@ export default function MyInfoPagePreview() {
         {/* 아이디 */}
         <Field label="아이디" value={user.username} />
 
+        {/* 학교 이름 */}
         {/* 학교 이름 + 변경 버튼 inline */}
         <div
           style={{
@@ -466,7 +467,6 @@ export default function MyInfoPagePreview() {
             학교 이름
           </label>
 
-          {/* 🔹 아이디 input과 똑같이 80% 폭 맞춤 */}
           <div
             style={{
               width: '85%',
@@ -517,7 +517,6 @@ export default function MyInfoPagePreview() {
             </button>
           </div>
 
-          {/* 🔽 기존 폼은 그대로 유지 */}
           {showSchoolForm && (
             <form
               onSubmit={(e) => e.preventDefault()}
@@ -550,9 +549,9 @@ export default function MyInfoPagePreview() {
                     handleSchoolSearch(value)
                   }}
                   style={{
-                    flex: 1,
-                    padding: '9px 10px',
-                    borderRadius: 8,
+                    width: '100%', // 🔥 가로 전체 사용
+                    padding: '10px 12px',
+                    borderRadius: 10,
                     border: '1px solid #d1d5db',
                     fontSize: 13,
                     boxSizing: 'border-box',
@@ -581,6 +580,7 @@ export default function MyInfoPagePreview() {
                     borderRadius: 8,
                     border: '1px solid #e5e7eb',
                     background: '#ffffff',
+                    width: '100%',
                   }}
                 >
                   {searchResults.map((s: any) => {
@@ -637,7 +637,7 @@ export default function MyInfoPagePreview() {
                   style={{
                     marginTop: 8,
                     display: 'flex',
-                    justifyContent: 'flex-end',
+                    justifyContent: 'center',
                   }}
                 >
                   <button
@@ -797,24 +797,10 @@ export default function MyInfoPagePreview() {
               <div
                 style={{
                   display: 'flex',
-                  justifyContent: 'flex-end',
+                  justifyContent: 'center',
                   gap: 8,
                 }}
               >
-                <button
-                  type="button"
-                  onClick={() => setShowPwConfirmModal(false)}
-                  style={{
-                    padding: '7px 14px',
-                    borderRadius: 999,
-                    border: '1px solid #d1d5db',
-                    background: 'white',
-                    fontSize: 13,
-                    cursor: 'pointer',
-                  }}
-                >
-                  아니오
-                </button>
                 <button
                   type="button"
                   onClick={() => {
@@ -833,6 +819,20 @@ export default function MyInfoPagePreview() {
                   }}
                 >
                   예
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowPwConfirmModal(false)}
+                  style={{
+                    padding: '7px 14px',
+                    borderRadius: 999,
+                    border: '1px solid #d1d5db',
+                    background: 'white',
+                    fontSize: 13,
+                    cursor: 'pointer',
+                  }}
+                >
+                  아니오
                 </button>
               </div>
             </div>
@@ -874,24 +874,10 @@ export default function MyInfoPagePreview() {
               <div
                 style={{
                   display: 'flex',
-                  justifyContent: 'flex-end',
-                  gap: 8,
+                  justifyContent: 'center',
+                  gap: 10,
                 }}
               >
-                <button
-                  type="button"
-                  onClick={handleCancelSchoolChange}
-                  style={{
-                    padding: '7px 14px',
-                    borderRadius: 999,
-                    border: '1px solid #d1d5db',
-                    background: 'white',
-                    fontSize: 13,
-                    cursor: 'pointer',
-                  }}
-                >
-                  아니오
-                </button>
                 <button
                   type="button"
                   onClick={handleConfirmSchoolChange}
@@ -907,6 +893,20 @@ export default function MyInfoPagePreview() {
                   }}
                 >
                   예
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancelSchoolChange}
+                  style={{
+                    padding: '7px 14px',
+                    borderRadius: 999,
+                    border: '1px solid #d1d5db',
+                    background: 'white',
+                    fontSize: 13,
+                    cursor: 'pointer',
+                  }}
+                >
+                  아니오
                 </button>
               </div>
             </div>
