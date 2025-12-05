@@ -1,15 +1,17 @@
 'use client'
 
 import { useSearchParams } from 'next/navigation'
+import { Suspense } from 'react'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 
 const API_KEY = '32cbd596f1b64e7abc94e1eb85ca5a06'
 
-export default function SignupPage() {
-  const searchParams = useSearchParams()
+function SignupInner() {
+  const searchParams =
+    typeof window !== 'undefined' ? useSearchParams() : null
 
-  // ⭐ 입력 값
+  // 입력 값
   const [verified, setVerified] = useState(false)
 
   const [realName, setRealName] = useState('')
@@ -31,15 +33,20 @@ export default function SignupPage() {
   const [showModal, setShowModal] = useState(false)
   const [modalMessage, setModalMessage] = useState('')
 
-  // ⭐ 아이디 중복체크 관련
   const [idAvailable, setIdAvailable] = useState<boolean | null>(null)
-
 
   // 기존 유저 불러오기
   useEffect(() => {
     const saved = JSON.parse(localStorage.getItem('users') || '[]')
     setUsers(saved)
   }, [])
+
+  // verified 값 처리
+  useEffect(() => {
+    if (!searchParams) return
+    const v = searchParams.get('verified')
+    setVerified(v === '1')
+  }, [searchParams])
 
   // alert
   const showAlert = (msg: string) => {
@@ -59,7 +66,9 @@ export default function SignupPage() {
     }
 
     try {
-      const url = `https://open.neis.go.kr/hub/schoolInfo?KEY=${API_KEY}&Type=json&pIndex=1&pSize=20&SCHUL_NM=${encodeURIComponent(keyword)}`
+      const url = `https://open.neis.go.kr/hub/schoolInfo?KEY=${API_KEY}&Type=json&pIndex=1&pSize=20&SCHUL_NM=${encodeURIComponent(
+        keyword
+      )}`
       const res = await fetch(url)
       const data = await res.json()
 
@@ -145,7 +154,6 @@ export default function SignupPage() {
     const updated = [...users, newUser]
     localStorage.setItem('users', JSON.stringify(updated))
 
-    // 🔥 급식 / 학사일정에서 사용할 데이터 저장
     localStorage.setItem('userSchool', school)
     localStorage.setItem('eduCode', eduCode)
     localStorage.setItem('schoolCode', schoolCode)
@@ -153,13 +161,13 @@ export default function SignupPage() {
     showAlert('회원가입 완료!')
     setTimeout(() => (window.location.href = '/auth/login'), 1500)
   }
-  // 스타일
+
   const cardStyle: React.CSSProperties = {
     width: '420px',
     background: 'white',
     borderRadius: '16px',
     padding: '40px 30px',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
   }
 
   const inputStyle: React.CSSProperties = {
@@ -184,7 +192,6 @@ export default function SignupPage() {
           padding: '20px',
         }}
       >
-
         <div style={cardStyle}>
           <h2
             style={{
@@ -372,7 +379,10 @@ export default function SignupPage() {
             }}
           >
             이미 계정이 있으신가요?
-            <Link href="/auth/login" style={{ color: '#4FC3F7', fontWeight: 600 }}>
+            <Link
+              href="/auth/login"
+              style={{ color: '#4FC3F7', fontWeight: 600 }}
+            >
               {' '}
               로그인
             </Link>
@@ -409,21 +419,9 @@ export default function SignupPage() {
             </div>
           </div>
         )}
-
       </div>
 
       <style jsx>{`
-        .auth-btn {
-          width: 100%;
-          height: 48px;
-          display: flex;
-          align-items: center;
-          border-radius: 10px;
-          font-weight: 600;
-          cursor: pointer;
-          margin-bottom: 12px;
-        }
-
         .modal-backdrop,
         .confirm-backdrop {
           position: fixed;
@@ -473,5 +471,13 @@ export default function SignupPage() {
         }
       `}</style>
     </>
+  )
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={<div>회원가입 페이지 불러오는 중...</div>}>
+      <SignupInner />
+    </Suspense>
   )
 }
