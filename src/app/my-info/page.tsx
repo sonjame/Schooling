@@ -206,7 +206,7 @@ export default function MyInfoPagePreview() {
     setSchoolError(null)
 
     try {
-      const API_KEY = process.env.NEXT_PUBLIC_NEIS_KEY
+      const API_KEY = `109e3660c3624bf5a4803631891234ef`
       if (!API_KEY) {
         setSchoolError('서버 설정 오류로 학교 검색을 할 수 없습니다.')
         return
