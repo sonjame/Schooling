@@ -4,6 +4,8 @@ import { useSearchParams } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import type React from 'react'
+import { Suspense } from 'react'
+
 
 const API_KEY = '32cbd596f1b64e7abc94e1eb85ca5a06'
 
@@ -201,6 +203,7 @@ export default function SignupPage() {
   }
 
   return (
+    <Suspense fallback={<div>Loading...</div>}>
     <>
       {/* 전체 래퍼 */}
       <div
@@ -542,6 +545,7 @@ export default function SignupPage() {
           color: white;
         }
       `}</style>
-    </>
+      </>
+    </Suspense>
   )
 }
