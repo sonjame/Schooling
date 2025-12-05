@@ -11,6 +11,10 @@ interface UserData {
   // 예전에 pw, userPassword 같은 키로 저장했을 가능성까지 대비
   pw?: string
   userPassword?: string
+
+  // ⭐ 추가: 학교코드 저장 가능하도록
+  eduCode?: string
+  schoolCode?: string
 }
 
 const pwInputStyle: React.CSSProperties = {
@@ -83,6 +87,7 @@ export default function MyInfoPagePreview() {
 
   // 선택된 학교 + 모달 상태
   const [selectedSchool, setSelectedSchool] = useState<string | null>(null)
+  const [selectedSchoolRow, setSelectedSchoolRow] = useState<any | null>(null) // ⭐ row 저장
   const [showConfirmModal, setShowConfirmModal] = useState(false)
 
   /* ============================
@@ -102,6 +107,8 @@ export default function MyInfoPagePreview() {
         school: parsed.school,
         grade: parsed.grade,
         name: parsed.name,
+        eduCode: parsed.eduCode, // ⭐ 유지
+        schoolCode: parsed.schoolCode, // ⭐ 유지
         password:
           parsed.password !== undefined
             ? parsed.password
@@ -269,7 +276,7 @@ export default function MyInfoPagePreview() {
     setIsSearching(true)
 
     try {
-      const API_KEY = `109e3660c3624bf5a4803631891234ef`
+      const API_KEY = process.env.NEXT_PUBLIC_NEIS_KEY
       if (!API_KEY) {
         console.error('NEXT_PUBLIC_NEIS_KEY가 설정되지 않았습니다.')
         setSchoolError('서버 설정 오류로 학교 검색을 할 수 없습니다.')
@@ -310,25 +317,41 @@ export default function MyInfoPagePreview() {
     }
   }
 
-  const handleSelectSchool = (schulNm: string) => {
-    setSelectedSchool(schulNm)
+  const handleSelectSchool = (schoolRow: any) => {
+    setSelectedSchool(schoolRow.SCHUL_NM)
+    setSelectedSchoolRow(schoolRow) // ⭐ row 저장
+
     setSchoolMessage(
-      `'${schulNm}'(으)로 변경을 진행하려면 아래 확인 버튼을 눌러주세요.`
+      `'${schoolRow.SCHUL_NM}'(으)로 변경을 진행하려면 아래 확인 버튼을 눌러주세요.`
     )
   }
 
   const handleConfirmSchoolChange = () => {
-    if (!user || !selectedSchool) return
+    if (!user || !selectedSchoolRow) return
 
     // 1) state 상의 user 변경
-    const updated: UserData = { ...user, school: selectedSchool }
+    const updated: UserData = {
+      ...user,
+      school: selectedSchoolRow.SCHUL_NM,
+      eduCode: selectedSchoolRow.ATPT_OFCDC_SC_CODE,
+      schoolCode: selectedSchoolRow.SD_SCHUL_CODE,
+    }
     setUser(updated)
-    setSchoolMessage(`'${selectedSchool}'(으)로 학교가 변경되었습니다.`)
+
+    // ⭐ localStorage 저장
+    localStorage.setItem('loggedInUser', JSON.stringify(updated))
+    localStorage.setItem('eduCode', updated.eduCode!)
+    localStorage.setItem('schoolCode', updated.schoolCode!)
+
+    localStorage.setItem('school', selectedSchoolRow.SCHUL_NM)
+
+    setSchoolMessage(`'${updated.school}'(으)로 학교가 변경되었습니다.`)
     setShowConfirmModal(false)
     setShowSchoolForm(false)
     setSearchResults([])
     setSchoolKeyword('')
     setSelectedSchool(null)
+    setSelectedSchoolRow(null)
 
     // 2) 🔥 로컬스토리지 직접 갱신 (loggedInUser + users 배열까지)
     if (typeof window !== 'undefined') {
@@ -340,14 +363,13 @@ export default function MyInfoPagePreview() {
             const loggedParsed = JSON.parse(loggedRaw)
             const merged = {
               ...loggedParsed,
-              school: selectedSchool,
+              school: updated.school,
             }
             localStorage.setItem('loggedInUser', JSON.stringify(merged))
           } catch {
-            // 예전에 문자열로만 저장돼 있었다면, 새 구조로 덮어씀
             const merged = {
               username: user.username,
-              school: selectedSchool,
+              school: updated.school,
               grade: user.grade,
               name: user.name,
               password: user.password,
@@ -358,7 +380,7 @@ export default function MyInfoPagePreview() {
           }
         }
 
-        // (2) users 배열(회원 목록)도 있으면 같이 업데이트
+        // (2) users 배열 업데이트
         const usersRaw = localStorage.getItem('users')
         if (usersRaw) {
           const users = JSON.parse(usersRaw)
@@ -371,7 +393,7 @@ export default function MyInfoPagePreview() {
               ) {
                 return {
                   ...u,
-                  school: selectedSchool,
+                  school: updated.school,
                 }
               }
               return u
@@ -383,6 +405,8 @@ export default function MyInfoPagePreview() {
         console.error('로컬스토리지 학교 동기화 중 오류:', e)
       }
     }
+
+    window.location.reload()
   }
 
   const handleCancelSchoolChange = () => {
@@ -590,7 +614,7 @@ export default function MyInfoPagePreview() {
                       <button
                         key={s.SD_SCHUL_CODE ?? name}
                         type="button"
-                        onClick={() => handleSelectSchool(name)}
+                        onClick={() => handleSelectSchool(s)}
                         style={{
                           display: 'block',
                           width: '100%',
