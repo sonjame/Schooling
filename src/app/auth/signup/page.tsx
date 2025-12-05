@@ -1,13 +1,19 @@
 'use client'
 
+import { useSearchParams } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 
 const API_KEY = '32cbd596f1b64e7abc94e1eb85ca5a06'
 
 export default function SignupPage() {
+  const searchParams = useSearchParams()
+
+  // ⭐ 입력 값
+  const [verified, setVerified] = useState(false)
+
+  const [realName, setRealName] = useState('')
   const [username, setUsername] = useState('')
-  const [name, setName] = useState('')
   const [password, setPassword] = useState('')
   const [password2, setPassword2] = useState('')
   const [school, setSchool] = useState('')
@@ -16,14 +22,35 @@ export default function SignupPage() {
   const [level, setLevel] = useState('')
   const [grade, setGrade] = useState('1학년')
 
+  const [users, setUsers] = useState<any[]>([])
   const [searchResults, setSearchResults] = useState<any[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  const [users, setUsers] = useState<any[]>([])
 
   const [showConfirm, setShowConfirm] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const [modalMessage, setModalMessage] = useState('')
+
+  // ⭐ 아이디 중복체크 관련
+  const [idAvailable, setIdAvailable] = useState<boolean | null>(null)
+
+  // 소셜 정보 로드
+  useEffect(() => {
+    const socialName = searchParams.get('name')
+    const socialEmail = searchParams.get('email')
+    const socialId = searchParams.get('id')
+
+    if (socialName && socialEmail && socialId) {
+      localStorage.setItem(
+        'socialUser',
+        JSON.stringify({
+          id: socialId,
+          name: socialName,
+          email: socialEmail,
+        })
+      )
+    }
+  }, [searchParams])
 
   // 기존 유저 불러오기
   useEffect(() => {
@@ -31,13 +58,25 @@ export default function SignupPage() {
     setUsers(saved)
   }, [])
 
+  // 인증 여부 확인
+  useEffect(() => {
+    const v = searchParams.get('verified')
+    setVerified(v === '1')
+  }, [searchParams])
+
+  // 공통 alert
   const showAlert = (msg: string) => {
     setModalMessage(msg)
     setShowModal(true)
     setTimeout(() => setShowModal(false), 1500)
   }
 
-  // 학교 검색
+  // 인증
+  const handleKakaoAuth = () => (window.location.href = '/api/auth/kakao')
+  const handleGoogleAuth = () => (window.location.href = '/api/auth/google')
+  const handleEmailAuth = () => (window.location.href = '/auth/email')
+
+  // ⭐ 학교 검색
   const searchSchool = async (keyword: string) => {
     setSchool(keyword)
     setIsSearching(true)
@@ -73,9 +112,39 @@ export default function SignupPage() {
     setIsSearching(false)
   }
 
+  // ⭐ 아이디 중복확인
+  const checkDuplicateId = () => {
+    if (!username.trim()) {
+      showAlert('아이디를 입력해주세요.')
+      return
+    }
+
+    const exists = users.some((u) => u.username === username)
+
+    if (exists) {
+      setIdAvailable(false)
+      showAlert('이미 사용 중인 아이디입니다.')
+    } else {
+      setIdAvailable(true)
+      showAlert('사용 가능한 아이디입니다!')
+    }
+  }
+
+  // 제출 전 체크
   const handleSubmit = () => {
-    if (!username || !name || !password || !password2 || !school) {
+    if (!realName || !username || !password || !password2 || !school) {
       showAlert('모든 정보를 입력해주세요.')
+      return
+    }
+
+    // ⭐ 아이디 중복확인 여부 체크
+    if (idAvailable === false) {
+      showAlert('이미 사용 중인 아이디입니다.')
+      return
+    }
+
+    if (idAvailable !== true) {
+      showAlert('아이디 중복확인을 먼저 해주세요.')
       return
     }
 
@@ -88,16 +157,14 @@ export default function SignupPage() {
   }
 
   const handleFinalSubmit = () => {
-    const exists = users.find((u) => u.username === username)
-    if (exists) {
-      showAlert('이미 존재하는 아이디입니다.')
-      return
-    }
+    const social = JSON.parse(localStorage.getItem('socialUser') || '{}')
 
     const newUser = {
       username,
-      name,
       password,
+      name: realName,
+      email: social.email || '',
+      social_id: social.id || null,
       school,
       schoolCode,
       eduCode,
@@ -113,6 +180,7 @@ export default function SignupPage() {
     setTimeout(() => (window.location.href = '/auth/login'), 1500)
   }
 
+  // 스타일
   const cardStyle: React.CSSProperties = {
     width: '420px',
     background: 'white',
@@ -132,29 +200,19 @@ export default function SignupPage() {
   }
 
   return (
-    <>
-      <div
-        style={{
-          minHeight: '100vh',
-          background: '#E3F2FD',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          padding: '20px',
-        }}
-      >
-        {/* 회원가입 화면 */}
-        <div style={cardStyle}>
-          <h2
-            style={{
-              fontSize: '22px',
-              fontWeight: 700,
-              color: '#4FC3F7',
-              textAlign: 'center',
-              marginBottom: '10px',
-            }}
-          >
-            📝 회원가입
+        {/* STEP 2: 회원가입 입력 */}
+        {verified && (
+          <div style={cardStyle}>
+            <h2
+              style={{
+                fontSize: '22px',
+                fontWeight: 700,
+                color: '#4FC3F7',
+                textAlign: 'center',
+                marginBottom: '10px',
+              }}
+            >
+              📝 회원가입
             </h2>
 
             {/* 실명 */}
@@ -340,26 +398,30 @@ export default function SignupPage() {
               </Link>
             </p>
 
-        {/* 학년 확인 모달 */}
-        {showConfirm && (
-          <div className="confirm-backdrop">
-            <div className="confirm-box">
-              <div className="confirm-icon">❗</div>
-              <p className="confirm-text">{grade} 이 맞습니까?</p>
-
-              <div className="confirm-buttons">
-                <button className="cancel-btn" onClick={() => setShowConfirm(false)}>
-                  취소
-                </button>
-                <button className="ok-btn" onClick={handleFinalSubmit}>
-                  확인
-                </button>
+            {/* 학년 확인 모달 */}
+            {showConfirm && (
+              <div className="confirm-backdrop">
+                <div className="confirm-box">
+                  <div className="confirm-icon">❗</div>
+                  <p className="confirm-text">{grade} 이 맞습니까?</p>
+                  <div className="confirm-buttons">
+                    <button
+                      className="cancel-btn"
+                      onClick={() => setShowConfirm(false)}
+                    >
+                      취소
+                    </button>
+                    <button className="ok-btn" onClick={handleFinalSubmit}>
+                      확인
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
 
-        {/* 블루 모달 */}
+        {/* 알림 모달 */}
         {showModal && (
           <div className="modal-backdrop">
             <div className="modal-box">
@@ -370,10 +432,49 @@ export default function SignupPage() {
         )}
       </div>
 
-      {/* 🔥 모달이 뒤로 가려지지 않도록 스타일 추가 */}
+      {/* 일부 스타일 유지 */}
       <style jsx>{`
-        .confirm-backdrop,
-        .modal-backdrop {
+        .auth-btn {
+          width: 100%;
+          height: 48px;
+          padding: 0 14px;
+          display: flex;
+          align-items: center;
+          border-radius: 10px;
+          font-size: 15px;
+          font-weight: 600;
+          cursor: pointer;
+          border: none;
+          margin-bottom: 12px;
+          justify-content: flex-start;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .auth-icon {
+          width: 22px;
+          height: 22px;
+          margin-right: 12px;
+        }
+
+        .google {
+          background: #ffffff;
+          border: 1px solid #ddd;
+          color: #444;
+        }
+
+        .kakao {
+          background: #fee500;
+          color: #3c1e1e;
+        }
+
+        .email {
+          background: #e3f2fd;
+          border: 1px solid #90caf9;
+          color: #1976d2;
+        }
+
+        .modal-backdrop,
+        .confirm-backdrop {
           position: fixed;
           top: 0;
           left: 0;
@@ -384,55 +485,47 @@ export default function SignupPage() {
           display: flex;
           justify-content: center;
           align-items: center;
-
-          /* 최상단으로 올리기 */
-          z-index: 9999;
         }
 
-        .confirm-box,
-        .modal-box {
+        .modal-box,
+        .confirm-box {
           background: white;
           padding: 30px;
           border-radius: 16px;
           text-align: center;
           border: 2px solid #4fc3f7;
-
-          z-index: 10000;
         }
 
         .confirm-buttons {
-        display: flex;
-        gap: 16px;        /* 버튼 사이 여유 증가 */
-        margin-top: 18px;
-        width: 100%;
-        justify-content: space-between;
+          display: flex;
+          gap: 12px;
+          margin-top: 16px;
         }
 
         .cancel-btn,
         .ok-btn {
-        flex: 1;
-        height: 52px;      /* 버튼 높이 증가 */
-        padding: 0;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        border-radius: 12px; /* 버튼 더 둥글게 */
-        font-size: 16px;     /* 글씨 약간 크게 */
-        font-weight: 700;
-        cursor: pointer;
-        border: none;
+          flex: 1;
+          height: 42px;
+          padding: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 10px;
+          font-size: 15px;
+          font-weight: 600;
+          cursor: pointer;
+          border: none;
         }
 
         .cancel-btn {
-        background: #e2e2e2;
-        color: #333;
+          background: #e2e2e2;
+          color: #333;
         }
 
         .ok-btn {
-        background: #4fc3f7;
-        color: white;
+          background: #4fc3f7;
+          color: white;
         }
-
       `}</style>
     </>
   )
