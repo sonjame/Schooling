@@ -3,37 +3,11 @@
 import { useEffect, useState } from 'react'
 
 // ---------------------------
-//  Google Fonts + Icons 로딩
-// ---------------------------
-const loadGoogleResources = () => {
-  const font = document.createElement('link')
-  font.rel = 'stylesheet'
-  font.href =
-    'https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap'
-
-  const icon = document.createElement('link')
-  icon.rel = 'stylesheet'
-  icon.href =
-    'https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined'
-
-  document.head.appendChild(font)
-  document.head.appendChild(icon)
-}
-
-// ---------------------------
-//  학교 데이터 (교육청코드 + 학교코드)
-// ---------------------------
-const SCHOOL_DATA: Record<string, { edu: string; code: string }> = {
-  양주고등학교: { edu: 'J10', code: '7580167' },
-  덕계고등학교: { edu: 'J10', code: '7531116' },
-  회천고등학교: { edu: 'J10', code: '7620312' },
-}
-
-// ---------------------------
 //  급식 API 불러오기 함수 (단일 날짜 조회)
 // ---------------------------
 async function fetchMeal(date: string, eduCode: string, schoolCode: string) {
-  const url = `https://open.neis.go.kr/hub/mealServiceDietInfo?KEY=109e3660c3624bf5a4803631891234ef&Type=json&ATPT_OFCDC_SC_CODE=J10&SD_SCHUL_CODE=7531116&MLSV_YMD=${date}`
+  const API_KEY = `109e3660c3624bf5a4803631891234ef`
+  const url = `https://open.neis.go.kr/hub/mealServiceDietInfo?KEY=${API_KEY}&Type=json&ATPT_OFCDC_SC_CODE=${eduCode}&SD_SCHUL_CODE=${schoolCode}&MLSV_YMD=${date}`
 
   try {
     const res = await fetch(url)
@@ -41,39 +15,36 @@ async function fetchMeal(date: string, eduCode: string, schoolCode: string) {
 
     if (!data.mealServiceDietInfo) return null
 
-    const raw = data.mealServiceDietInfo[1].row[0].DDISH_NM as string
+    const raw = data.mealServiceDietInfo[1]?.row?.[0]?.DDISH_NM
+    if (!raw) return null
 
-    // 1) 먼저 <br/> 기준으로 줄 나누기
-    const lines = raw.split('<br/>')
+    const lines: string[] = raw.split('<br/>')
 
-    // 2) 각 줄에서 번호 / 괄호 제거 + 정리
     const cleanedLines = lines
       .map((line) =>
         line
-          .replace(/[①-⑳]/g, '')          // ①~⑳ 제거 (혹시 있을 경우)
-          .replace(/\(\s?[0-9.]+\s?\)/g, '') // (1.2.6.13) 같은 알레르기 번호 제거
-          .replace(/-\s*$/g, '')            // 라인 끝의 '-' 제거 (잡곡밥- → 잡곡밥)
-          .replace(/\s+/g, ' ')             // 중복 공백 정리
+          .replace(/[\u2460-\u2473]/g, '') // ①~⑳ 제거
+          .replace(/\(\s?[0-9.]+\s?\)/g, '') // 알레르기 번호 제거
+          .replace(/-\s*$/g, '') // 끝의 - 제거
+          .replace(/\s+/g, ' ') // 공백 정리
           .trim()
       )
-      .filter((line) => line.length > 0)    // 빈 줄 제거
+      .filter((line) => line.length > 0)
 
-    // 🔙 UI에서는 string[] 으로 사용
     return cleanedLines
-  } catch {
+  } catch (e) {
+    console.error(`급식 불러오기 실패 (${date})`, e)
     return null
   }
 }
 
 // ---------------------------
-//  이번 주 월~금 날짜 구하기
+//  이번 주 날짜 구하기
 // ---------------------------
 function getWeekDates() {
   const today = new Date()
-
-  // 한국 시간 기준으로 변환
   const kr = new Date(today.getTime() + 9 * 60 * 60 * 1000)
-  const day = kr.getDay() // 0: 일, 1: 월...
+  const day = kr.getDay()
   const monday = new Date(kr)
   monday.setDate(kr.getDate() - (day === 0 ? 6 : day - 1))
 
@@ -86,40 +57,44 @@ function getWeekDates() {
     const m = String(d.getMonth() + 1).padStart(2, '0')
     const dd = String(d.getDate()).padStart(2, '0')
 
-    dates.push({
-      key: `${y}${m}${dd}`,
-      label: `${m}/${dd}`,
-    })
+    dates.push({ key: `${y}${m}${dd}`, label: `${m}/${dd}` })
   }
 
   return dates
 }
 
-// ---------------------------
-//  메인 컴포넌트
-// ---------------------------
 export default function WeeklyMealPage() {
   const [weekMeals, setWeekMeals] = useState<
     { date: string; label: string; meal: string[] | null }[]
   >([])
-  const [loading, setLoading] = useState(true)
 
-  // ---------------------------
-  //  회원정보 기반 학교 불러오기
-  // ---------------------------
-  const [eduCode, setEduCode] = useState('J10') // 기본값
-  const [schoolCode, setSchoolCode] = useState('7580167') // 기본값: 양주고
+  const [eduCode, setEduCode] = useState<string | null>(null)
+  const [schoolCode, setSchoolCode] = useState<string | null>(null)
+  const [ready, setReady] = useState(false)
 
+  // 🔹 저장된 학교 정보 불러오기
   useEffect(() => {
-    loadGoogleResources()
+    const storedEdu = localStorage.getItem('eduCode')
+    const storedCode = localStorage.getItem('schoolCode')
 
-    // ⭐ 로그인한 사용자의 학교 불러오기
-    const userSchool = localStorage.getItem('userSchool')
+    setEduCode(storedEdu ?? 'J10')
+    setSchoolCode(storedCode ?? '7580167')
 
-    if (userSchool && SCHOOL_DATA[userSchool]) {
-      setEduCode(SCHOOL_DATA[userSchool].edu)
-      setSchoolCode(SCHOOL_DATA[userSchool].code)
-    }
+    setReady(true)
+  }, [])
+
+  // 🔹 아이콘 폰트 로드 보장 (아이콘 깨짐 방지)
+  useEffect(() => {
+    const iconLink = document.createElement('link')
+    iconLink.rel = 'stylesheet'
+    iconLink.href =
+      'https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined'
+    document.head.appendChild(iconLink)
+  }, [])
+
+  // 🔹 저장된 값 준비 후 급식 로드
+  useEffect(() => {
+    if (!ready || !eduCode || !schoolCode) return
 
     const dates = getWeekDates()
 
@@ -130,9 +105,8 @@ export default function WeeklyMealPage() {
       })
     ).then((results) => {
       setWeekMeals(results)
-      setLoading(false)
     })
-  }, [eduCode, schoolCode])
+  }, [ready, eduCode, schoolCode])
 
   return (
     <div
@@ -158,25 +132,34 @@ export default function WeeklyMealPage() {
         🍱 이번 주 점심 메뉴
       </h3>
 
-      <div
-        style={{
-          display: 'grid',
-          gap: '16px',
-        }}
-      >
+      {/* 🔥 아이콘 폰트 스타일 */}
+      <style>
+        {`
+        .material-symbols-outlined {
+          font-family: 'Material Symbols Outlined';
+          font-weight: normal;
+          font-style: normal;
+          font-size: 22px;
+          display: inline-block;
+          line-height: 1;
+          vertical-align: middle;
+        }
+      `}
+      </style>
+
+      <div style={{ display: 'grid', gap: '16px' }}>
         {weekMeals.map((d, idx) => (
           <div
             key={idx}
             style={{
               padding: '18px',
               borderRadius: '14px',
-              background: '#E3F2FD', // 🎨 파스텔 블루 배경
-              color: '#222', // 🖤 검은색 텍스트
+              background: '#E3F2FD',
+              color: '#222',
               boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
               border: '1px solid #BBDEFB',
             }}
           >
-            {/* 날짜 영역 */}
             <div
               style={{
                 display: 'flex',
@@ -188,11 +171,10 @@ export default function WeeklyMealPage() {
               <span
                 className="material-symbols-outlined"
                 style={{
-                  fontSize: 22,
-                  background: '#BBDEFB', // 🎨 연한 파스텔 블루
+                  background: '#BBDEFB',
                   padding: '6px',
                   borderRadius: '8px',
-                  color: '#1A237E', // 딥블루 아이콘 색
+                  color: '#1A237E',
                 }}
               >
                 calendar_month
@@ -202,14 +184,13 @@ export default function WeeklyMealPage() {
                 style={{
                   fontSize: '17px',
                   fontWeight: 700,
-                  color: '#0D47A1', // 덜 튀는 블루 텍스트
+                  color: '#0D47A1',
                 }}
               >
                 {d.label}
               </span>
             </div>
 
-            {/* 점심 메뉴 */}
             {!d.meal ? (
               <p style={{ opacity: 0.85, fontSize: 15 }}>급식 정보 없음</p>
             ) : (
@@ -219,16 +200,11 @@ export default function WeeklyMealPage() {
                   paddingLeft: '18px',
                   fontSize: '15px',
                   lineHeight: 1.6,
-                  color: '#222', // 검은색 메뉴 글씨
+                  color: '#222',
                 }}
               >
                 {d.meal.map((m, i) => (
-                  <li
-                    key={i}
-                    style={{
-                      marginBottom: 4,
-                    }}
-                  >
+                  <li key={i} style={{ marginBottom: 4 }}>
                     {m}
                   </li>
                 ))}
