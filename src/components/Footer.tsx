@@ -33,7 +33,14 @@ async function fetchMeal(date: string, eduCode: string, schoolCode: string) {
 
     if (!data.mealServiceDietInfo) return null
 
-    const raw = data.mealServiceDietInfo[1]?.row?.[0]?.DDISH_NM
+    const rows = data.mealServiceDietInfo[1]?.row
+    if (!rows) return null
+
+    // ⭐⭐⭐ 중식만 필터링
+    const lunchRow = rows.find((r: any) => r.MMEAL_SC_NM === '중식')
+    if (!lunchRow) return null
+
+    const raw = lunchRow.DDISH_NM
     if (!raw) return null
 
     const lines: string[] = raw.split('<br/>')
@@ -41,9 +48,9 @@ async function fetchMeal(date: string, eduCode: string, schoolCode: string) {
     const cleanedLines = lines
       .map((line) =>
         line
-          .replace(/[\u2460-\u2473]/g, '')
-          .replace(/\(\s?[0-9.]+\s?\)/g, '')
-          .replace(/-\s*$/g, '')
+          .replace(/[\u2460-\u2473]/g, '') // ①② 숫자 제거
+          .replace(/\(\s?[0-9.]+\s?\)/g, '') // (5.6) 칼로리 제거
+          .replace(/-\s*$/g, '') // 끝에 - 제거
           .replace(/\s+/g, ' ')
           .trim()
       )
