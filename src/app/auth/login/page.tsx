@@ -54,15 +54,29 @@ export default function LoginPage() {
       return
     }
 
-    // ⭐ 저장할 데이터 최소화 (비밀번호 제거)
+    // ⭐ 실명(name) 포함하여 저장 (중요!)
     const safeUser = {
       username: found.username,
+      name: found.name, // ← 추가됨 (실명)
+      email: found.email, // ← 있으면 저장
       school: found.school,
       grade: found.grade,
       level: found.level,
+      eduCode: found.eduCode, // 🔥 있으면 저장되도록 추가
+      schoolCode: found.schoolCode, // 🔥 있으면 저장되도록 추가
     }
 
     localStorage.setItem('loggedInUser', JSON.stringify(safeUser))
+
+    // 🔥 급식/일정 데이터 갱신 핵심!
+    localStorage.setItem('userSchool', safeUser.school)
+
+    if (safeUser.eduCode) {
+      localStorage.setItem('eduCode', safeUser.eduCode)
+    }
+    if (safeUser.schoolCode) {
+      localStorage.setItem('schoolCode', safeUser.schoolCode)
+    }
 
     showAlert('로그인 성공!', () => {
       window.location.href = '/'
@@ -173,6 +187,27 @@ export default function LoginPage() {
               style={{ color: '#4FC3F7', fontWeight: 600 }}
             >
               회원가입
+            </Link>
+          </p>
+          <p
+            style={{
+              textAlign: 'center',
+              marginTop: '14px',
+              fontSize: '14px',
+            }}
+          >
+            <Link
+              href="/auth/find-id"
+              style={{ color: '#4FC3F7', fontWeight: 600 }}
+            >
+              아이디 찾기
+            </Link>
+            {'  /  '}
+            <Link
+              href="/auth/find-password"
+              style={{ color: '#4FC3F7', fontWeight: 600 }}
+            >
+              비밀번호 찾기
             </Link>
           </p>
         </div>
