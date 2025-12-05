@@ -276,7 +276,7 @@ export default function MyInfoPagePreview() {
     setIsSearching(true)
 
     try {
-      const API_KEY = process.env.NEXT_PUBLIC_NEIS_KEY
+      const API_KEY = `109e3660c3624bf5a4803631891234ef`
       if (!API_KEY) {
         console.error('NEXT_PUBLIC_NEIS_KEY가 설정되지 않았습니다.')
         setSchoolError('서버 설정 오류로 학교 검색을 할 수 없습니다.')
